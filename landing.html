@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mizan · The expense tracker that reads your bank SMS</title>
+<meta name="description" content="Mizan turns the SMS alerts your bank already sends into a clear record of spending, income and balance on iPhone. Monthly payments, Zakat, set-asides and more. Free and open source.">
+<meta property="og:title" content="Mizan · The expense tracker that reads your bank SMS">
+<meta property="og:description" content="No bank login, nothing to type. Spending, monthly payments, Zakat and set-asides, all from your bank's SMS alerts.">
+<meta property="og:image" content="%%ASSETS%%/iphone-dashboard-dark.webp">
+<meta name="theme-color" content="#07090a">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap">
+<link rel="stylesheet" href="%%ASSETS%%/site.css?v=%%VER%%">
+%%HEAD%%
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="nav">
+  <div class="wrap nav-in">
+    <a class="brand" href="#top" aria-label="Mizan home">
+      <span class="logo" aria-hidden="true">م</span><span>Mizan</span>
+    </a>
+    <nav class="nav-links" aria-label="Main">
+      <a href="#how">How it works</a>
+      <a href="#features">Features</a>
+      <a href="#tour">Tour</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+    <div class="nav-cta">
+      <a class="btn btn-ghost btn-sm gh" href="https://github.com/jawadpro/mizan-expense-manager-ios" rel="noopener">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5a11.5 11.5 0 0 0-3.6 22.4c.6.1.8-.3.8-.6v-2c-3.2.7-3.9-1.5-3.9-1.5-.5-1.3-1.3-1.7-1.3-1.7-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.7-1.6-2.6-.3-5.3-1.3-5.3-5.7 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.2 1.2a11 11 0 0 1 5.8 0c2.2-1.5 3.2-1.2 3.2-1.2.6 1.6.2 2.8.1 3.1.8.8 1.2 1.8 1.2 3.1 0 4.4-2.7 5.4-5.3 5.7.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A11.5 11.5 0 0 0 12 .5z"/></svg>
+        GitHub
+      </a>
+      <a class="btn btn-primary btn-sm" href="#get">Get Mizan</a>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+<!-- HERO -->
+<section class="hero" id="top">
+  <div class="glow" aria-hidden="true"></div>
+  <div class="wrap hero-copy">
+    <a class="pill" href="https://github.com/jawadpro/mizan-expense-manager-ios" rel="noopener"><span class="dot"></span>Free and open source · Built for iPhone</a>
+    <h1>Your bank already texts you.<br>Mizan turns it into <em>clarity.</em></h1>
+    <p class="lede">Every debit and credit SMS becomes a clean record of your spending, income and live balance. Plus monthly payments, Zakat and set-asides, worked out for you. No bank login. Nothing to type.</p>
+    <div class="cta-row">
+      <a class="btn btn-primary" href="#get">Start free in 10 minutes</a>
+      <a class="btn btn-ghost" href="#tour">Take the tour</a>
+    </div>
+    <ul class="ticks">
+      <li>No bank password</li><li>Payments appear in seconds</li><li>Your data, your database</li>
+    </ul>
+  </div>
+
+  <div class="wrap stage" aria-label="Mizan turning a bank SMS into a tracked payment">
+    <div class="float f-sms">
+      <span class="f-meta">Messages · now</span>
+      <p>PKR 4,848.00 debited from A/C **1234 at IMTIAZ STORE on 09-Nov. Avl Bal PKR 840,152.00</p>
+    </div>
+    <div class="float f-txn">
+      <div class="f-row"><strong>Imtiaz Store</strong><span class="neg mono">−Rs 4,848</span></div>
+      <div class="chips"><span>Groceries</span><span>UBL</span><span>9:41 am</span></div>
+    </div>
+    <div class="phone phone-hero"><img src="%%ASSETS%%/iphone-dashboard-dark.webp" alt="Mizan dashboard showing a bank balance of Rs 8,40,152" width="640" height="1073"></div>
+    <div class="float f-rent">
+      <span class="check" aria-hidden="true">✓</span>
+      <div><strong>Rent paid</strong><span class="f-meta">Matched from bank SMS</span></div>
+    </div>
+    <div class="float f-zakat">
+      <span class="f-meta">Zakat · Ramadan 1448</span>
+      <strong class="mono">91 days to go</strong>
+      <span class="f-meta">Silver nisab · 2.5%</span>
+    </div>
+  </div>
+</section>
+
+<!-- STRIP -->
+<section class="strip" aria-label="Banks and currencies">
+  <div class="wrap strip-in">
+    <span class="strip-label">Reads alerts from</span>
+    <span>MCB</span><span>UBL</span><span>and any bank you teach it</span>
+    <span class="sep" aria-hidden="true"></span>
+    <span class="mono">PKR · INR · USD · GBP · EUR · AED · SAR</span>
+  </div>
+</section>
+
+<!-- HOW -->
+<section class="sec" id="how">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">How it works</span>
+      <h2>Set it up once. <em>It runs itself.</em></h2>
+      <p>Mizan uses the SMS alerts you already receive. An iPhone Shortcut forwards each one the moment it arrives.</p>
+    </div>
+    <ol class="steps">
+      <li class="step">
+        <span class="step-n mono">01</span>
+        <h3>Your bank sends an alert</h3>
+        <p>The same SMS you get for every card payment, transfer and salary.</p>
+        <div class="mini-sms">PKR 25,000.00 transferred to ALI RAZA via IBFT. Ref 88213</div>
+      </li>
+      <li class="step">
+        <span class="step-n mono">02</span>
+        <h3>A Shortcut forwards it</h3>
+        <p>A one-time iPhone automation sends bank alerts to your own Mizan. OTPs and promos are ignored.</p>
+        <div class="mini-flow mono"><span>Messages</span><i aria-hidden="true"></i><span>Shortcuts</span><i aria-hidden="true"></i><span>Mizan</span></div>
+      </li>
+      <li class="step">
+        <span class="step-n mono">03</span>
+        <h3>Mizan files it for you</h3>
+        <p>Amount, date, person and category. Your balance updates. Anything unclear waits in a review inbox.</p>
+        <div class="mini-txn"><span>Ali Raza</span><span class="chip">Family</span><span class="neg mono">−Rs 25,000</span></div>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<!-- BENTO -->
+<section class="sec" id="features">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Features</span>
+      <h2>Much more than a <em>spending list</em></h2>
+      <p>Everything a household in Pakistan actually juggles each month, in one calm app.</p>
+    </div>
+
+    <div class="bento">
+      <article class="tile t-balance">
+        <div class="tile-copy">
+          <span class="tag">Dashboard</span>
+          <h3>Live bank balance, across every bank</h3>
+          <p>Set it once. Every transaction keeps it right. Expenses, income and net flow for any period, compared with the one before.</p>
+        </div>
+        <div class="shot shot-desk"><img src="%%ASSETS%%/desktop-dashboard-dark.webp" alt="Dashboard with balance, expenses, income and trends" loading="lazy" width="1600" height="1000"></div>
+      </article>
+
+      <article class="tile t-monthly">
+        <div class="tile-copy">
+          <span class="tag tag-gold">Monthly payments</span>
+          <h3>Rent, bills and salaries, ticked off</h3>
+          <p>A checklist that starts fresh each month and matches the payment from your SMS, so you tick it in one tap.</p>
+        </div>
+        <div class="checklist" aria-label="Example monthly checklist">
+          <div class="ck done"><span class="box">✓</span><span>Rent</span><span class="mono">Rs 85,000</span></div>
+          <div class="ck done"><span class="box">✓</span><span>K-Electric</span><span class="mono">Rs 14,320</span></div>
+          <div class="ck"><span class="box"></span><span>Maid</span><span class="mono late">late</span></div>
+          <div class="ck"><span class="box"></span><span>School fee</span><span class="mono">due 10th</span></div>
+        </div>
+      </article>
+
+      <article class="tile t-zakat">
+        <span class="tag tag-gold">Zakat</span>
+        <h3>Zakat, worked out each Ramadan</h3>
+        <p>Checks your savings against the gold or silver nisab with live metal prices, and keeps a record for every year.</p>
+        <div class="zakat-ui">
+          <div><span class="f-meta">Nisab</span><strong>Silver · 52.5 tola</strong></div>
+          <div><span class="f-meta">Rate</span><strong class="mono">2.5%</strong></div>
+          <div><span class="f-meta">Next Ramadan</span><strong class="mono">91 days</strong></div>
+        </div>
+      </article>
+
+      <article class="tile t-aside">
+        <span class="tag">Set-asides</span>
+        <h3>Charity that saves itself</h3>
+        <p>Rules like "10% of every remittance for sadaqah". Mizan tracks what has built up and what you have paid out.</p>
+        <div class="bars">
+          <div class="bar"><div class="bar-top"><span>Sadaqah · 10% of remittances</span><span class="mono">Rs 12,400</span></div><div class="track"><i style="width:62%"></i></div></div>
+          <div class="bar"><div class="bar-top"><span>Qurbani fund · Rs 5,000 a month</span><span class="mono">Rs 35,000</span></div><div class="track"><i class="gold" style="width:44%"></i></div></div>
+        </div>
+      </article>
+
+      <article class="tile t-cal">
+        <div class="tile-copy">
+          <span class="tag">Calendar</span>
+          <h3>See every payment by day, week or month</h3>
+        </div>
+        <div class="phone phone-sm"><img src="%%ASSETS%%/iphone-calendar.webp" alt="Calendar of payments" loading="lazy" width="640" height="1073"></div>
+      </article>
+
+      <article class="tile t-check">
+        <span class="tag">Spending check</span>
+        <h3>A gentle nudge before you overspend</h3>
+        <p>Set a monthly limit for each category. Mizan compares this month with your usual pace and lets you know early, not after the money is gone.</p>
+        <div class="limits">
+          <div class="lim"><span>Food</span><div class="track"><i class="warn" style="width:92%"></i></div><span class="mono">92%</span></div>
+          <div class="lim"><span>Fuel</span><div class="track"><i style="width:58%"></i></div><span class="mono">58%</span></div>
+          <div class="lim"><span>Shopping</span><div class="track"><i style="width:31%"></i></div><span class="mono">31%</span></div>
+        </div>
+      </article>
+
+      <article class="tile t-small">
+        <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 4h16v12H5.2L4 17.2z"/><path d="M8 9h8M8 12h5"/></svg></span>
+        <h3>Review inbox</h3>
+        <p>Mizan never guesses. Reversals, pending or foreign payments wait for one tap.</p>
+      </article>
+      <article class="tile t-small">
+        <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 3h9l3 3v15H6z"/><path d="M9 11h6M9 15h6M9 7h3"/></svg></span>
+        <h3>Tax summary</h3>
+        <p>Your year at a glance, ready for filing season.</p>
+      </article>
+      <article class="tile t-small">
+        <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 18a5 5 0 0 1-.6-10A6 6 0 0 1 18 9a4.5 4.5 0 0 1-.5 9z"/><path d="M12 11v6m-3-3 3 3 3-3"/></svg></span>
+        <h3>Nightly backups</h3>
+        <p>To your own Google Drive, plus a one-tap download.</p>
+      </article>
+      <article class="tile t-small">
+        <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg></span>
+        <h3>Push notifications</h3>
+        <p>Know when an alert needs your review.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- TOUR -->
+<section class="sec tour" id="tour">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Take the tour</span>
+      <h2>Made for your phone. <em>Great on a laptop.</em></h2>
+    </div>
+    <div class="tour-tabs" role="tablist" aria-label="App screens">
+      <button role="tab" id="tab-0" aria-selected="true" aria-controls="tour-panel" data-i="0">Overview</button>
+      <button role="tab" id="tab-1" aria-selected="false" aria-controls="tour-panel" data-i="1">Transactions</button>
+      <button role="tab" id="tab-2" aria-selected="false" aria-controls="tour-panel" data-i="2">Monthly</button>
+      <button role="tab" id="tab-3" aria-selected="false" aria-controls="tour-panel" data-i="3">Calendar</button>
+      <button role="tab" id="tab-4" aria-selected="false" aria-controls="tour-panel" data-i="4">Zakat</button>
+    </div>
+    <div class="tour-panel" id="tour-panel" role="tabpanel" aria-labelledby="tab-0">
+      <div class="tour-copy">
+        <h3 id="tour-title">Your month at a glance</h3>
+        <p id="tour-text">Balance, expenses, income and remittances for any period, with trends, top categories and the people you pay most.</p>
+        <a class="link" href="https://github.com/jawadpro/mizan-expense-manager-ios#features" rel="noopener">See all features on GitHub →</a>
+      </div>
+      <div class="tour-shots">
+        <div class="laptop"><img id="tour-desk" src="%%ASSETS%%/desktop-dashboard-light.webp" alt="Overview on desktop" loading="lazy" width="1600" height="1000"></div>
+        <div class="phone phone-tour"><img id="tour-phone" src="%%ASSETS%%/iphone-dashboard.webp" alt="Overview on iPhone" loading="lazy" width="640" height="1073"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DAY -->
+<section class="sec" id="day">
+  <div class="wrap day">
+    <div class="day-copy">
+      <span class="eyebrow">A day with Mizan</span>
+      <h2>You live your day. <em>Mizan keeps the books.</em></h2>
+      <ol class="timeline">
+        <li><span class="mono t">08:15</span><div><strong>Salary lands</strong><p>Income logged, and your 10% sadaqah set-aside is put aside on its own.</p></div></li>
+        <li><span class="mono t">13:30</span><div><strong>Lunch on card</strong><p>Filed under Food before you are back at your desk.</p></div></li>
+        <li><span class="mono t">18:05</span><div><strong>Rent transferred</strong><p>Matched to this month's checklist. One tap and it is ticked.</p></div></li>
+        <li><span class="mono t">22:00</span><div><strong>You open the app</strong><p>Everything is already there, and it is backed up overnight.</p></div></li>
+      </ol>
+    </div>
+    <div class="day-shots">
+      <div class="phone"><img src="%%ASSETS%%/iphone-transactions.webp" alt="Transactions grouped by day" loading="lazy" width="640" height="1073"></div>
+      <div class="phone lift"><img src="%%ASSETS%%/iphone-monthly.webp" alt="Monthly payments checklist" loading="lazy" width="640" height="1073"></div>
+    </div>
+  </div>
+</section>
+
+<!-- COMPARE -->
+<section class="sec" id="why">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Why Mizan</span>
+      <h2>Not another budget app <em>to feed by hand</em></h2>
+    </div>
+    <div class="table-box">
+      <table class="compare">
+        <thead><tr><th scope="col"><span class="sr">Question</span></th><th scope="col">Typical budget apps</th><th scope="col" class="us">Mizan</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">Asks for your bank login</th><td>Often</td><td class="us">Never</td></tr>
+          <tr><th scope="row">Typing in every purchase</th><td>Yes</td><td class="us">Only cash</td></tr>
+          <tr><th scope="row">Understands Pakistani bank SMS</th><td>Rarely</td><td class="us">Yes, and learns new banks</td></tr>
+          <tr><th scope="row">Zakat, set-asides, monthly bills</th><td>No</td><td class="us">Built in</td></tr>
+          <tr><th scope="row">Ads and trackers</th><td>Common</td><td class="us">None</td></tr>
+          <tr><th scope="row">Price</th><td>Subscription</td><td class="us">Free to self-host</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- PRIVACY -->
+<section class="sec" id="privacy">
+  <div class="wrap">
+    <div class="privacy">
+      <div class="privacy-copy">
+        <span class="eyebrow">Private by design</span>
+        <h2>Your money is <em>nobody else's business</em></h2>
+        <p>Mizan runs on your own free Vercel and Neon accounts. One owner, one passphrase, no shared servers. SMS text is treated as data only, and unclear alerts are stored redacted.</p>
+      </div>
+      <dl class="stats">
+        <div><dt class="mono">0</dt><dd>bank logins shared</dd></div>
+        <div><dt class="mono">0</dt><dd>ads or trackers</dd></div>
+        <div><dt class="mono">Rs 0</dt><dd>a month to run</dd></div>
+        <div><dt class="mono">~10 min</dt><dd>to set up</dd></div>
+      </dl>
+    </div>
+  </div>
+</section>
+
+<!-- GET -->
+<section class="sec" id="get">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Get Mizan</span>
+      <h2>Two ways to <em>start tonight</em></h2>
+    </div>
+    <div class="paths">
+      <article class="path">
+        <span class="tag">Available now</span>
+        <h3>Self-host, free forever</h3>
+        <p>Deploy your own copy to Vercel and Neon from GitHub. The setup screen walks you through the rest.</p>
+        <ul class="list">
+          <li>All features included</li><li>Your own private database</li><li>Open source, inspect every line</li>
+        </ul>
+        <a class="btn btn-primary" href="https://github.com/jawadpro/mizan-expense-manager-ios#setup-deploy-your-own-copy" rel="noopener">Set up from GitHub</a>
+      </article>
+      <article class="path path-beta">
+        <span class="tag tag-gold">Coming soon</span>
+        <h3>Hosted Mizan</h3>
+        <p>Rather not deploy anything? We host it for you. Join the beta list and we'll email you when it opens.</p>
+        <form class="beta" id="beta-form" novalidate>
+          <label for="beta-email">Email address</label>
+          <div class="beta-row">
+            <input id="beta-email" name="email" type="email" autocomplete="email" placeholder="you@example.com" required>
+            <button class="btn btn-gold" type="submit">Join the beta</button>
+          </div>
+          <input type="text" name="website" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+          <p class="beta-msg" id="beta-msg" role="status"></p>
+        </form>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="sec" id="faq">
+  <div class="wrap faq-wrap">
+    <div class="sec-head">
+      <span class="eyebrow">FAQ</span>
+      <h2>Questions, <em>answered</em></h2>
+    </div>
+    <div class="faq">
+      <details><summary>Does Mizan need my bank username or password?</summary><p>No. Mizan only reads the SMS alerts you choose to forward with an iPhone Shortcut. It never connects to your bank.</p></details>
+      <details><summary>Which banks does it work with?</summary><p>It is tuned for Pakistani banks such as MCB and UBL and for PKR amounts. You can teach it any other bank by pasting one example alert.</p></details>
+      <details><summary>Does it work on Android?</summary><p>Automatic import uses iPhone Shortcuts, so it is built for iPhone. On other phones you can still open Mizan in the browser and add payments by hand.</p></details>
+      <details><summary>How does the Zakat calculation work?</summary><p>Mizan compares your bank balance and other savings with the gold or silver nisab using live metal prices and works out 2.5% if Zakat is due. It is a guide, not a fatwa, so ask a scholar you trust about unusual cases.</p></details>
+      <details><summary>What does it cost?</summary><p>Self-hosting is free. Mizan runs on the free tiers of Vercel and Neon. A hosted version is planned; join the beta list to hear first.</p></details>
+      <details><summary>What if an SMS is unclear?</summary><p>Mizan never guesses. Reversals, pending payments, foreign currency or unknown wording wait in the review inbox for you to confirm.</p></details>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="foot">
+  <div class="wrap foot-in">
+    <div class="brand"><span class="logo" aria-hidden="true">م</span><span>Mizan</span></div>
+    <p>An expense manager that reads your bank SMS. Built for Pakistani households.</p>
+    <nav aria-label="Footer">
+      <a href="https://github.com/jawadpro/mizan-expense-manager-ios" rel="noopener">GitHub</a>
+      <a href="#features">Features</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+    <small>Screenshots use made-up sample data. © %%YEAR%% Mizan</small>
+  </div>
+</footer>
+
+<script>window.MIZAN = { endpoint: "%%ENDPOINT%%", nonce: "%%NONCE%%", assets: "%%ASSETS%%" };</script>
+<script src="%%ASSETS%%/site.js?v=%%VER%%" defer></script>
+%%FOOT%%
+</body>
+</html>
