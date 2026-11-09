@@ -59,10 +59,10 @@ em{font-family:var(--serif);font-style:italic;font-weight:400;letter-spacing:0}
 .ticks{list-style:none;margin:0;padding:0;display:flex;gap:22px;flex-wrap:wrap;justify-content:center;font-size:14px;color:var(--mut)}
 .ticks li::before{content:"✓";color:var(--acc);margin-right:7px}
 
-.stage{position:relative;height:660px;margin-top:56px;display:flex;justify-content:center}
+.stage{position:relative;height:720px;margin-top:56px;display:flex;justify-content:center}
 .phone{filter:drop-shadow(0 40px 50px rgba(0,0,0,.55))}
 .phone img{width:100%}
-.phone-hero{width:310px;position:relative;z-index:2;align-self:flex-start}
+.phone-hero{width:340px;position:relative;z-index:2;align-self:flex-start}
 .float{position:absolute;z-index:3;background:rgba(17,23,21,.86);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--line2);border-radius:18px;padding:14px 16px;box-shadow:0 24px 50px -20px rgba(0,0,0,.7);animation:bob 7s ease-in-out infinite}
 .f-meta{display:block;font-size:12px;color:var(--dim)}
 .f-sms{left:calc(50% - 470px);top:70px;width:300px;border-radius:20px 20px 20px 6px}
