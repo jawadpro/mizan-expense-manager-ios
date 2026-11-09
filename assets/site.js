@@ -9,11 +9,11 @@
 
   // Tour tabs
   var screens = [
-    { t: 'Your month at a glance', p: 'Balance, expenses, income and remittances for any period, with trends, top categories and the people you pay most.', d: 'desktop-dashboard-light', m: 'iphone-dashboard' },
-    { t: 'Every payment, already filed', p: 'Search, filter and edit. Add cash spending by hand and export everything to CSV whenever you need it.', d: 'desktop-transactions', m: 'iphone-transactions' },
-    { t: 'Bills you never forget', p: 'Rent, utilities, school fees and salaries in a checklist that resets each month and ticks itself off from your SMS.', d: 'desktop-dashboard-dark', m: 'iphone-monthly' },
-    { t: 'Your spending on a calendar', p: 'See exactly where money went on any day, week or month, and spot the expensive weekends.', d: 'desktop-calendar', m: 'iphone-calendar' },
-    { t: 'Zakat without the spreadsheet', p: 'Counts down to Ramadan, checks your savings against the nisab with live gold and silver prices, and keeps a record for every year.', d: 'desktop-zakat', m: 'iphone-dashboard-dark' }
+    { t: 'Your month at a glance', p: 'Balance, expenses, income and remittances for any period, with trends, top categories and the people you pay most.', d: 'desktop-dashboard-light', m: 'devices/dashboard-light' },
+    { t: 'Every payment, already filed', p: 'Search, filter and edit. Add cash spending by hand and export everything to CSV whenever you need it.', d: 'desktop-transactions', m: 'devices/transactions-light' },
+    { t: 'Bills you never forget', p: 'Rent, utilities, school fees and salaries in a checklist that resets each month and ticks itself off from your SMS.', d: 'desktop-dashboard-dark', m: 'devices/monthly-light' },
+    { t: 'Your spending on a calendar', p: 'See exactly where money went on any day, week or month, and spot the expensive weekends.', d: 'desktop-calendar', m: 'devices/calendar-light' },
+    { t: 'Zakat without the spreadsheet', p: 'Counts down to Ramadan, checks your savings against the nisab with live gold and silver prices, and keeps a record for every year.', d: 'desktop-zakat', m: 'devices/zakat-light' }
   ];
   var tabs = document.querySelectorAll('.tour-tabs [role=tab]');
   var panel = document.getElementById('tour-panel');
