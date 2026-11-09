@@ -1,0 +1,38 @@
+import { z } from "zod";
+import { CURRENCY_CODES, DEFAULT_CURRENCY, type CurrencyCode } from "./money";
+
+/** Feature switches from the Settings page. Unknown or missing keys fall back to these defaults. */
+export const DEFAULT_PREFS = {
+  spendingCheck: true,
+  limitWarnPercent: 80,
+  ramadanNotice: true,
+  defaultRange: "30d" as "7d" | "30d" | "month" | "12m" | "year",
+  /** The owner's name(s) as banks print them, comma-separated, so transfers between their own accounts are recognised. */
+  ownNames: "",
+  /** Currency every amount is shown in. Display only: stored amounts are never converted. */
+  currency: DEFAULT_CURRENCY as CurrencyCode,
+};
+export type Prefs = typeof DEFAULT_PREFS;
+
+export const prefsPatch = z
+  .object({
+    spendingCheck: z.boolean(),
+    limitWarnPercent: z.union([z.literal(70), z.literal(80), z.literal(90)]),
+    ramadanNotice: z.boolean(),
+    defaultRange: z.enum(["7d", "30d", "month", "12m", "year"]),
+    currency: z.enum(CURRENCY_CODES),
+    ownNames: z.string().max(300).transform((s) => s.split(",").map((x) => x.replace(/\s+/g, " ").trim()).filter(Boolean).join(", ")),
+  })
+  .partial()
+  .strict();
+
+/** Reads stored settings leniently: a bad or old value for one key never breaks the others. */
+export function normalizePrefs(raw: unknown): Prefs {
+  const out = { ...DEFAULT_PREFS };
+  if (!raw || typeof raw !== "object") return out;
+  for (const [k, v] of Object.entries(raw)) {
+    const one = prefsPatch.safeParse({ [k]: v });
+    if (one.success) Object.assign(out, one.data);
+  }
+  return out;
+}
