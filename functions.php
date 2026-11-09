@@ -1,7 +1,7 @@
 <?php
 if (!defined('ABSPATH')) exit;
 
-define('MIZAN_VER', '1.1.0');
+define('MIZAN_VER', '1.1.1');
 
 // Keep the front end lean.
 remove_action('wp_head', 'print_emoji_detection_script', 7);
