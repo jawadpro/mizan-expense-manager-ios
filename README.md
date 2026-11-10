@@ -173,7 +173,7 @@ npm run dev                       # http://localhost:3000
 | `npm run typecheck` | TypeScript check |
 | `npm run migrate` | Apply `migrations/*.sql` (safe to run repeatedly) |
 | `node scripts/create-admin.mjs email 'password'` | Create the admin account on an empty database |
-| `npm run e2e` | End-to-end checks against a running instance (`BASE_URL`, `MIZAN_PASSWORD`, `SMS_INGEST_TOKEN`) |
+| `npm run e2e` | End-to-end checks against a running instance (`BASE_URL`, `MIZAN_EMAIL`, `MIZAN_PASSWORD`, `SMS_INGEST_TOKEN`) |
 
 **Project layout**
 
@@ -190,16 +190,17 @@ tests/            Vitest unit tests
 
 **Upgrading from the passphrase version.** After you deploy this version, the sign-in page asks for your old passphrase once, then for the email and password you'll use from now on. All your data moves into that account, which becomes the admin, and the passphrase stops working.
 
-Only `DATABASE_URL` is required. Everything else is either created by the setup wizard and stored in your database, or optional. A value set as an environment variable always overrides the stored one. See [`.env.example`](.env.example).
+Only `DATABASE_URL` is required. Its user must be allowed to create roles (Neon's default owner is): the migrations create a `mizan_tenant` role that the app runs its queries as. Everything else is either created by the setup wizard and stored in your database, or optional. A value set as an environment variable always overrides the stored one. See [`.env.example`](.env.example).
 
 | Variable | Purpose |
 |---|---|
 | `DATABASE_URL` | **Required.** Postgres connection string (pooled, `sslmode=require`). |
 | `RESEND_API_KEY`, `EMAIL_FROM` | Recommended. Sends email-confirmation and password-reset emails through [Resend](https://resend.com). `EMAIL_FROM` looks like `Mizan <hello@yourdomain.com>`. |
+| `SIGNUPS` | Optional. Set to `closed` to stop new sign-ups. |
 | `APP_URL` | Optional. The public address used in links in emails, e.g. `https://mizan.example.com`. Defaults to the address the request came to. |
 | `ADMIN_PASSWORD_HASH` | Only for installs from before accounts existed: the old passphrase, used once to create the admin account. |
 | `SESSION_SECRET` | Optional. 32+ random characters for signing sessions. |
-| `SMS_INGEST_TOKEN` | Optional. 32+ random characters; the token the Shortcut sends. |
+| `SMS_INGEST_TOKEN` | Optional, for older installs. If set, it's the first account's SMS token; every other account gets its own token on the SMS setup page. |
 | `SMS_AUTO_IMPORT` | Optional. Set to `false` to send every alert to the Review inbox. |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | Optional. Web push keys (created by setup if empty). |
 | `CRON_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Optional. Nightly Google Drive backups. |
@@ -209,6 +210,7 @@ Only `DATABASE_URL` is required. Everything else is either created by the setup 
 ## Privacy and security
 
 - **Accounts.** Everyone signs in with an email and password, stored only as a scrypt hash. Every page and API route checks the session and the account on the server. Changing or resetting a password signs out every other device, and reset links work once, for one hour.
+- **Each account's data is its own.** Every row carries its account, and Postgres row-level security only shows a query the signed-in account's rows. The app runs every query as a database role that can't bypass those rules, so a query that forgets to say whose data it wants sees nothing.
 - **Hardened sessions.** Cookies are signed, HttpOnly, Secure and SameSite. Every write needs a CSRF token and a same-origin request. Sign-in and SMS endpoints are rate limited.
 - **SMS is data, never instructions.** Only alerts from senders you trust are accepted, and OTPs and promotional messages are ignored. Only a redacted copy of an unclear alert is kept, and it is deleted once you resolve it.
 - **No duplicates.** Re-sent alerts are detected by a fingerprint and the bank's reference number.
@@ -219,7 +221,7 @@ Only `DATABASE_URL` is required. Everything else is either created by the setup 
 - **iPhone only for SMS forwarding.** Automatic import uses iOS Shortcuts automations. On other phones you can still add transactions by hand or post to the `/api/sms` endpoint yourself.
 - **Built around South Asian bank alerts.** The built-in reader is tuned for Pakistani banks (MCB, UBL and others) and `PKR`/`Rs` amounts. You can teach it other banks from a pasted example, but expect a few alerts in the Review inbox at first.
 - **One currency.** The currency you choose changes how amounts are shown. Amounts are never converted between currencies.
-- **Sign-ups are closed for now.** Only the admin account exists until each account's data is kept separate; that comes next.
+- **Sign-ups are open by default.** Set `SIGNUPS=closed` to stop new accounts.
 - **Free-tier hosting.** Neon suspends an idle database, so the first load after a pause takes a second or two longer.
 
 ## Tech stack

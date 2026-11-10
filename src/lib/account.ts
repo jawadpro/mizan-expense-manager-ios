@@ -3,11 +3,8 @@ import { HttpError } from "./http";
 import { MAX_PASSWORD, MIN_PASSWORD, issueToken, type User } from "./users";
 import { resetPasswordMail, sendMail, verifyEmailMail } from "./email";
 
-/**
- * Whether anyone can create an account. Off until every table keeps each account's data apart; before
- * that, a new account would see the owner's data. Turned on in the change that separates the data.
- */
-export const SIGNUPS_OPEN = false;
+/** Whether anyone can create an account. On unless SIGNUPS=closed is set in the environment. */
+export const SIGNUPS_OPEN = (process.env.SIGNUPS ?? "open").toLowerCase() !== "closed";
 
 /** Throws a field error when a new password is too short or too long. */
 export function checkNewPassword(pw: unknown, field = "password"): string {

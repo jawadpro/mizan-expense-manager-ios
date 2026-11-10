@@ -29,7 +29,7 @@ export async function saveZakatYear(v: Omit<ZakatYearRow, "assessed_on"> & { ass
   await q(
     `INSERT INTO app.zakat_years (hijri_year, assessed_on, basis, wealth_paisa, nisab_paisa, due_paisa)
      VALUES ($1,$2,$3,$4,$5,$6)
-     ON CONFLICT (hijri_year) DO UPDATE SET assessed_on = EXCLUDED.assessed_on, basis = EXCLUDED.basis,
+     ON CONFLICT (user_id, hijri_year) DO UPDATE SET assessed_on = EXCLUDED.assessed_on, basis = EXCLUDED.basis,
        wealth_paisa = EXCLUDED.wealth_paisa, nisab_paisa = EXCLUDED.nisab_paisa, due_paisa = EXCLUDED.due_paisa, updated_at = now()`,
     [v.hijri_year, v.assessed_on, v.basis, v.wealth_paisa, v.nisab_paisa, v.due_paisa],
   );

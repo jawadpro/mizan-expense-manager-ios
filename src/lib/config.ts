@@ -99,26 +99,9 @@ export async function forgetLegacyPassphrase() {
   await loadConfig(true);
 }
 
+/** Marks the install as set up (its admin finished the setup steps). Each account's own steps are users.onboarded_at. */
 export async function finishSetup() {
   await q(`INSERT INTO app.config AS c (id, setup_done_at) VALUES (1, now())
            ON CONFLICT (id) DO UPDATE SET setup_done_at = coalesce(c.setup_done_at, now()), updated_at = now()`);
   await loadConfig(true);
-}
-
-/** The SMS token, when the app created it (one set in the environment is never shown). */
-export function savedSmsToken(): string | null {
-  if (env.fromEnv("SMS_INGEST_TOKEN")) return null;
-  try {
-    return env.smsToken();
-  } catch {
-    return null;
-  }
-}
-
-/** A new SMS token; the old one stops working. Only for a token the app created. */
-export async function regenerateSmsToken(): Promise<string> {
-  const token = secret();
-  await q(`UPDATE app.config SET sms_token = $1, updated_at = now() WHERE id = 1`, [token]);
-  await loadConfig(true);
-  return token;
 }

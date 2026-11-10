@@ -34,7 +34,7 @@ function configured(): boolean {
 export async function saveSubscription(s: PushSubscriptionInput) {
   await q(
     `INSERT INTO app.push_subscriptions (endpoint, p256dh, auth) VALUES ($1,$2,$3)
-     ON CONFLICT (endpoint) DO UPDATE SET p256dh = EXCLUDED.p256dh, auth = EXCLUDED.auth`,
+     ON CONFLICT (user_id, endpoint) DO UPDATE SET p256dh = EXCLUDED.p256dh, auth = EXCLUDED.auth`,
     [s.endpoint, s.keys.p256dh, s.keys.auth],
   );
 }

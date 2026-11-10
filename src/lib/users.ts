@@ -1,6 +1,6 @@
 import "server-only";
 import crypto from "node:crypto";
-import { q, tx } from "./db";
+import { asSystem, q, tx } from "./db";
 import { hashPassword } from "./crypto";
 
 export type Role = "user" | "admin";
@@ -15,6 +15,8 @@ export type User = {
   email_verified_at: string | null;
   /** Epoch ms, or null. Sessions issued before it are refused. */
   sessions_valid_after_ms: number | null;
+  /** When the account finished the setup steps (banks, name, iPhone), or null. */
+  onboarded_at: string | null;
   created_at: string;
 };
 
@@ -22,7 +24,7 @@ export const MIN_PASSWORD = 10;
 export const MAX_PASSWORD = 256;
 
 const COLS =
-  "id, email, name, role, status, email_verified_at, created_at, " +
+  "id, email, name, role, status, email_verified_at, onboarded_at, created_at, " +
   "(extract(epoch from sessions_valid_after) * 1000)::float8 AS sessions_valid_after_ms";
 
 /** Lower-cased and trimmed, or null when it isn't a plausible address. */
@@ -77,7 +79,74 @@ export async function createFirstAdmin(input: { email: string; password: string;
       [input.email, hashPassword(input.password), input.name?.trim() || null],
     );
     return (rows[0] as User) ?? null;
+  }).then(async (user) => {
+    if (user) await adoptUnowned(user.id);
+    return user;
   });
+}
+
+/** Tables whose rows belong to an account (migration 019). */
+const OWNED_TABLES = [
+  "transactions", "sms_imports", "review_items", "balance_anchor", "set_asides", "zakat_years",
+  "push_subscriptions", "app_secrets", "category_limits", "preferences", "sms_templates", "sms_words",
+  "banks", "monthly_items", "monthly_marks", "monthly_mark_txs",
+] as const;
+
+/**
+ * Data from before accounts existed belongs to the install's first account. Migration 019 assigns it when
+ * that account already exists; on an install whose owner creates it later, this does it then. The install's
+ * SMS token and finished setup carry over too, so the owner's iPhone Shortcut keeps working.
+ */
+async function adoptUnowned(userId: string) {
+  await asSystem(async () => {
+    for (const t of OWNED_TABLES) await q(`UPDATE app.${t} SET user_id = $1 WHERE user_id IS NULL`, [userId]);
+  });
+  await q(
+    `UPDATE app.users u SET sms_token = coalesce(u.sms_token, c.sms_token),
+            onboarded_at = coalesce(u.onboarded_at, c.setup_done_at)
+     FROM app.config c WHERE c.id = 1 AND u.id = $1`,
+    [userId],
+  );
+}
+
+/** The first account on the install, which an SMS_INGEST_TOKEN set in the environment belongs to. */
+export async function firstUserId(): Promise<string | null> {
+  const { rows } = await q<{ id: string }>(`SELECT id FROM app.users ORDER BY created_at, id LIMIT 1`);
+  return rows[0]?.id ?? null;
+}
+
+// ---- SMS token: what the iPhone Shortcut sends, which says whose alert it is ---------------------
+
+export async function getSmsToken(userId: string): Promise<string | null> {
+  const { rows } = await q<{ sms_token: string | null }>(`SELECT sms_token FROM app.users WHERE id = $1`, [userId]);
+  return rows[0]?.sms_token ?? null;
+}
+
+/** The account's token, created on first use. */
+export async function ensureSmsToken(userId: string): Promise<string> {
+  const { rows } = await q<{ sms_token: string }>(
+    `UPDATE app.users SET sms_token = coalesce(sms_token, $2) WHERE id = $1 RETURNING sms_token`,
+    [userId, crypto.randomBytes(32).toString("base64url")],
+  );
+  return rows[0].sms_token;
+}
+
+/** A new token; the old one stops working at once. */
+export async function regenerateSmsToken(userId: string): Promise<string> {
+  const token = crypto.randomBytes(32).toString("base64url");
+  await q(`UPDATE app.users SET sms_token = $2, updated_at = now() WHERE id = $1`, [userId, token]);
+  return token;
+}
+
+/** The active account an SMS token belongs to. */
+export async function userBySmsToken(token: string): Promise<User | null> {
+  if (token.length < 32 || token.length > 200) return null;
+  const { rows } = await q<User>(`SELECT ${COLS} FROM app.users WHERE sms_token = $1 AND status = 'active'`, [token]);
+  return rows[0] ?? null;
+}
+
+export async function markOnboarded(userId: string) {
+  await q(`UPDATE app.users SET onboarded_at = coalesce(onboarded_at, now()), updated_at = now() WHERE id = $1`, [userId]);
 }
 
 /** Saves a new password and signs out every session issued before now. Returns the cut-off (epoch ms). */

@@ -5,7 +5,8 @@ import { deleteSecret, getSecret, setSecret } from "./secretbox";
 // files it created itself, never the rest of the owner's Drive.
 
 const SCOPE = "https://www.googleapis.com/auth/drive.file";
-const TOKEN_NAME = "google_refresh_token";
+export const DRIVE_TOKEN_NAME = "google_refresh_token";
+const TOKEN_NAME = DRIVE_TOKEN_NAME;
 const FOLDER_NAME = "Mizan backups";
 const API = "https://www.googleapis.com/drive/v3";
 

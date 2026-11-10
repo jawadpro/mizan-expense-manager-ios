@@ -7,6 +7,14 @@ if (!url) throw new Error("DATABASE_URL is not set");
 const local = /@(localhost|127\.0\.0\.1)[:/]/.test(url) || process.env.DATABASE_SSL === "false";
 const db = new pg.Client({ connectionString: url, ssl: local ? false : { rejectUnauthorized: true } });
 await db.connect();
+// Sample rows belong to the first account (the demo's admin); new rows take their owner from mizan.uid.
+const { rows: [owner] } = await db.query("SELECT id FROM app.users ORDER BY created_at, id LIMIT 1");
+if (!owner) {
+  console.log("[seed] no account yet; skipping sample data.");
+  await db.end();
+  process.exit(0);
+}
+await db.query("SELECT set_config('mizan.uid', $1, false)", [owner.id]);
 
 const { rows: [{ n }] } = await db.query("SELECT count(*)::int AS n FROM app.transactions");
 if (n > 0) {
@@ -117,7 +125,7 @@ for (const t of tx) {
     [t.kind, t.amount, t.at, t.category, t.counterparty, t.note, t.source, t.bank],
   );
 }
-await db.query(`INSERT INTO app.balance_anchor (id, amount_paisa, as_of) VALUES (1, $1, now()) ON CONFLICT (id) DO NOTHING`, [845_000_00]);
+await db.query(`INSERT INTO app.balance_anchor (amount_paisa, as_of) VALUES ($1, now()) ON CONFLICT (user_id) DO NOTHING`, [845_000_00]);
 console.log(`[seed] added ${tx.length} sample transactions.`);
 await seedMonthly();
 await db.end();

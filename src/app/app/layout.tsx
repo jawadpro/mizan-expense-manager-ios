@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import Shell from "@/components/Shell";
 import { getUser } from "@/lib/auth";
-import { setupState } from "@/lib/config";
+import { asUser } from "@/lib/db";
 import { DEFAULT_CURRENCY } from "@/lib/money";
 import { getPrefs } from "@/lib/repo";
 
@@ -10,15 +10,10 @@ export const metadata = { title: "Workspace" };
 
 /** Server-side gate for the private workspace. API routes check the session independently. */
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  let ok = false;
-  try {
-    ok = !!(await getUser());
-  } catch {
-    ok = false;
-  }
-  if (!ok) redirect("/login");
-  // A new install finishes the setup steps before the workspace opens.
-  if (!(await setupState()).done) redirect("/setup");
-  const currency = (await getPrefs().catch(() => null))?.currency ?? DEFAULT_CURRENCY;
+  const user = await getUser().catch(() => null);
+  if (!user) redirect("/login");
+  // A new account finishes the setup steps before the workspace opens.
+  if (!user.onboarded_at) redirect("/setup");
+  const currency = (await asUser(user.id, getPrefs).catch(() => null))?.currency ?? DEFAULT_CURRENCY;
   return <Shell space="app" currency={currency}>{children}</Shell>;
 }

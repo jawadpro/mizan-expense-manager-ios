@@ -37,7 +37,7 @@ export async function getSecret(name: string): Promise<string | null> {
 export async function setSecret(name: string, value: string) {
   await q(
     `INSERT INTO app.app_secrets (name, value_enc) VALUES ($1,$2)
-     ON CONFLICT (name) DO UPDATE SET value_enc = EXCLUDED.value_enc, updated_at = now()`,
+     ON CONFLICT (user_id, name) DO UPDATE SET value_enc = EXCLUDED.value_enc, updated_at = now()`,
     [name, seal(value)],
   );
 }

@@ -5,6 +5,7 @@ import { env } from "./env";
 import { loadConfig } from "./config";
 import { hmac, safeEqual } from "./crypto";
 import { findUserById, type User } from "./users";
+import { setContextUser } from "./db";
 
 export const SESSION_COOKIE = "mizan_session";
 export const CSRF_COOKIE = "mizan_csrf";
@@ -104,6 +105,8 @@ export async function requireUser(req: Request): Promise<Authed> {
   }
   const user = await activeUser(session);
   if (!user) throw new AuthError(401, "Sign in required");
+  // From here on this request's queries only see this account's data.
+  setContextUser(user.id);
   return { user, session };
 }
 

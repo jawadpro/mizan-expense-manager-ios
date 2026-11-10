@@ -43,7 +43,7 @@ export async function ingestSms(input: { sender: string; text: string; receivedA
     const res = await tx(async (run) => {
       const imp = await run<{ id: string }>(
         `INSERT INTO app.sms_imports (fingerprint, received_at, outcome, parser_rule)
-         VALUES ($1,$2,$3,$4) ON CONFLICT (fingerprint) DO NOTHING RETURNING id`,
+         VALUES ($1,$2,$3,$4) ON CONFLICT (user_id, fingerprint) DO NOTHING RETURNING id`,
         [fingerprint, input.receivedAt, outcome, result.status === "parsed" ? result.rule : PARSER_VERSION],
       );
       if (!imp.rows[0]) throw new Duplicate();
@@ -54,7 +54,7 @@ export async function ingestSms(input: { sender: string; text: string; receivedA
         const ins = await run<{ id: string }>(
           `INSERT INTO app.transactions (kind, amount_paisa, occurred_at, category, counterparty, note, source, account_hint, bank_ref, sms_import_id, bank_id)
            VALUES ($1,$2,$3,$4,$5,$6,'sms',$7,$8,$9,$10)
-           ON CONFLICT (bank_ref) WHERE bank_ref IS NOT NULL DO NOTHING RETURNING id`,
+           ON CONFLICT (user_id, bank_ref) WHERE bank_ref IS NOT NULL DO NOTHING RETURNING id`,
           [
             result.fields.kind, result.fields.amountPaisa, result.fields.occurredAt, result.fields.category, f.counterparty,
             f.dateSource === "received" ? "Date taken from when the SMS arrived" : null,

@@ -11,19 +11,14 @@ import "../setup.css";
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Set up Mizan" };
 
-/** First run on a new install: database check, admin account, banks, name, iPhone Shortcut. */
+/** First run: database check and admin account on a new install, then each account's banks, name and iPhone Shortcut. */
 export default async function SetupPage() {
   const state = await setupState();
-  let signedIn = false;
-  try {
-    signedIn = !!(await getUser());
-  } catch {
-    signedIn = false;
-  }
-  if (state.done) redirect(signedIn ? "/app" : "/login");
   // An install from before accounts: its owner creates the admin account from the sign-in page.
   if (state.legacyPassphrase) redirect("/login");
-  if (state.hasOwner && !signedIn) redirect("/login");
+  const user = state.hasOwner ? await getUser().catch(() => null) : null;
+  if (state.hasOwner && !user) redirect("/login");
+  if (user?.onboarded_at) redirect("/app");
   const h = await headers();
   const host = h.get("x-forwarded-host") ?? h.get("host") ?? "your-app.vercel.app";
   return (

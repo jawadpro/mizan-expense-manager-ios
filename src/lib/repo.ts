@@ -182,7 +182,7 @@ async function balanceOverTime(from: string, to: string, granularity: "day" | "m
   const fmt = granularity === "day" ? "YYYY-MM-DD" : granularity === "month" ? "YYYY-MM" : "YYYY";
   const signed = `CASE WHEN t.kind = 'expense' THEN -t.amount_paisa ELSE t.amount_paisa END`;
   const { rows } = await q<{ bucket: string; balance: number }>(
-    `WITH a AS (SELECT amount_paisa, date_trunc('minute', as_of) AS as_of FROM app.balance_anchor WHERE id = 1),
+    `WITH a AS (SELECT amount_paisa, date_trunc('minute', as_of) AS as_of FROM app.balance_anchor),
      buckets AS (
        SELECT b, least((b + interval '${step}') AT TIME ZONE 'Asia/Karachi', now()) AS e
        FROM generate_series(date_trunc('${granularity}', $1::date::timestamp), date_trunc('${granularity}', $2::date::timestamp), interval '${step}') AS b
@@ -195,7 +195,7 @@ async function balanceOverTime(from: string, to: string, granularity: "day" | "m
      ORDER BY buckets.b`,
     [from, to],
   );
-  const anchor = await q(`SELECT 1 FROM app.balance_anchor WHERE id = 1`);
+  const anchor = await q(`SELECT 1 FROM app.balance_anchor`);
   return anchor.rowCount ? rows : null;
 }
 
@@ -344,7 +344,7 @@ export async function confirmReview(id: string, t: TransactionInput, chargesPais
     const ins = await run<TxRow>(
       `INSERT INTO app.transactions (kind, amount_paisa, occurred_at, category, counterparty, note, source, account_hint, bank_ref, sms_import_id, set_aside_id, bank_id)
        VALUES ($1,$2,$3,$4,$5,$6,'sms',$7,$8,$9,$10,$11)
-       ON CONFLICT (bank_ref) WHERE bank_ref IS NOT NULL DO NOTHING
+       ON CONFLICT (user_id, bank_ref) WHERE bank_ref IS NOT NULL DO NOTHING
        RETURNING ${TX_COLS}`,
       [t.kind, t.amount, t.occurredAt, t.category, t.counterparty ?? null, t.note ?? null, it.account_hint, it.bank_ref, it.sms_import_id, fundOf(t), bankId],
     );
@@ -385,8 +385,8 @@ export async function getBalance(): Promise<BalanceRow | null> {
 
 export async function setBalance(amountPaisa: number) {
   await q(
-    `INSERT INTO app.balance_anchor (id, amount_paisa, as_of, updated_at) VALUES (1, $1, now(), now())
-     ON CONFLICT (id) DO UPDATE SET amount_paisa = EXCLUDED.amount_paisa, as_of = EXCLUDED.as_of, updated_at = now()`,
+    `INSERT INTO app.balance_anchor (amount_paisa, as_of, updated_at) VALUES ($1, now(), now())
+     ON CONFLICT (user_id) DO UPDATE SET amount_paisa = EXCLUDED.amount_paisa, as_of = EXCLUDED.as_of, updated_at = now()`,
     [amountPaisa],
   );
   return getBalance();
@@ -493,7 +493,7 @@ export async function listLimits() {
 export async function setLimit(category: string, monthlyPaisa: number) {
   await q(
     `INSERT INTO app.category_limits (category, monthly_paisa) VALUES ($1, $2)
-     ON CONFLICT (category) DO UPDATE SET monthly_paisa = EXCLUDED.monthly_paisa, updated_at = now()`,
+     ON CONFLICT (user_id, category) DO UPDATE SET monthly_paisa = EXCLUDED.monthly_paisa, updated_at = now()`,
     [category, monthlyPaisa],
   );
 }
@@ -558,15 +558,15 @@ export async function spendingCheckData(today: string) {
 // ---- Settings ----
 
 export async function getPrefs() {
-  const { rows } = await q<{ value: unknown }>(`SELECT value FROM app.preferences WHERE id = 1`);
+  const { rows } = await q<{ value: unknown }>(`SELECT value FROM app.preferences`);
   return normalizePrefs(rows[0]?.value);
 }
 
 export async function updatePrefs(patch: Partial<Prefs>) {
   const next = { ...(await getPrefs()), ...patch };
   await q(
-    `INSERT INTO app.preferences (id, value, updated_at) VALUES (1, $1::jsonb, now())
-     ON CONFLICT (id) DO UPDATE SET value = EXCLUDED.value, updated_at = now()`,
+    `INSERT INTO app.preferences (value, updated_at) VALUES ($1::jsonb, now())
+     ON CONFLICT (user_id) DO UPDATE SET value = EXCLUDED.value, updated_at = now()`,
     [JSON.stringify(next)],
   );
   return next;
@@ -575,14 +575,14 @@ export async function updatePrefs(patch: Partial<Prefs>) {
 // ---- Direction words (all banks) ----
 
 export async function getSmsWords(): Promise<SmsWords> {
-  const { rows } = await q<{ value: unknown }>(`SELECT value FROM app.sms_words WHERE id = 1`);
+  const { rows } = await q<{ value: unknown }>(`SELECT value FROM app.sms_words`);
   return normalizeWords(rows[0]?.value);
 }
 
 export async function saveSmsWords(words: SmsWords): Promise<SmsWords> {
   await q(
-    `INSERT INTO app.sms_words (id, value, updated_at) VALUES (1, $1::jsonb, now())
-     ON CONFLICT (id) DO UPDATE SET value = EXCLUDED.value, updated_at = now()`,
+    `INSERT INTO app.sms_words (value, updated_at) VALUES ($1::jsonb, now())
+     ON CONFLICT (user_id) DO UPDATE SET value = EXCLUDED.value, updated_at = now()`,
     [JSON.stringify(words)],
   );
   return getSmsWords();

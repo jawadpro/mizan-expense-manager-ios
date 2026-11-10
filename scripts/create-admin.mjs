@@ -17,8 +17,8 @@ const salt = crypto.randomBytes(16);
 const hash = crypto.scryptSync(password, salt, 32, { N: 16384, r: 8, p: 1 });
 const passwordHash = `scrypt$16384$8$1$${salt.toString("base64url")}$${hash.toString("base64url")}`;
 const { rowCount } = await db.query(
-  `INSERT INTO app.users (email, password_hash, role, email_verified_at)
-   SELECT $1, $2, 'admin', now() WHERE NOT EXISTS (SELECT 1 FROM app.users)`,
+  `INSERT INTO app.users (email, password_hash, role, email_verified_at, onboarded_at)
+   SELECT $1, $2, 'admin', now(), now() WHERE NOT EXISTS (SELECT 1 FROM app.users)`,
   [email.trim().toLowerCase(), passwordHash],
 );
 console.log(rowCount ? `[create-admin] created ${email}` : "[create-admin] accounts already exist; leaving them alone.");

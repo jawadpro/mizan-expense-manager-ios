@@ -42,7 +42,8 @@ export const env = {
    * Only used to let an existing install's owner create the first account; ignored once any account exists.
    */
   legacyPassphraseHash: () => (stored.password_hash && stored.password_hash.length >= 20 ? stored.password_hash : pick("ADMIN_PASSWORD_HASH", null, 20)),
-  smsToken: () => need("SMS_INGEST_TOKEN", stored.sms_token, 32),
+  /** An SMS token set in the environment belongs to the install's first account; everyone else's is in app.users. */
+  envSmsToken: () => pick("SMS_INGEST_TOKEN", null, 32),
   smsAutoImport: () => (process.env.SMS_AUTO_IMPORT ?? "true").toLowerCase() !== "false",
   vapid: () => {
     const pub = pick("VAPID_PUBLIC_KEY", stored.vapid_public, 1);

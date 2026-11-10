@@ -1,30 +1,39 @@
 import { z } from "zod";
-import { assertSameOrigin, requireAdmin, requireUser, sessionHeaders } from "@/lib/auth";
+import { assertSameOrigin, requireUser, sessionHeaders, type Authed } from "@/lib/auth";
 import { checkNewPassword } from "@/lib/account";
-import { claimInstall, finishSetup, regenerateSmsToken, savedSmsToken, setupState } from "@/lib/config";
+import { claimInstall, finishSetup, setupState } from "@/lib/config";
 import { env } from "@/lib/env";
 import { HttpError, errorJson, handle, json, readJson } from "@/lib/http";
 import { clientIp, rateLimit } from "@/lib/ratelimit";
-import { normalizeEmail } from "@/lib/users";
+import { ensureSmsToken, firstUserId, markOnboarded, normalizeEmail, regenerateSmsToken } from "@/lib/users";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/** What the setup page needs to know. Says nothing secret; the SMS token only goes to the signed-in admin. */
+/** Whether this account's SMS token is the one set in the environment (only the first account's can be). */
+async function tokenFromEnv(user: Authed["user"]): Promise<boolean> {
+  return !!env.envSmsToken() && (await firstUserId()) === user.id;
+}
+
+/** What the setup page needs to know. Says nothing secret; the SMS token only goes to its own signed-in account. */
 export const GET = handle(async (req: Request) => {
   const state = await setupState();
   let token: string | null = null;
+  let fromEnv = false;
   let signedIn = false;
+  let onboarded = false;
   if (state.hasOwner) {
     try {
       const { user } = await requireUser(req);
       signedIn = true;
-      if (user.role === "admin") token = savedSmsToken();
+      onboarded = !!user.onboarded_at;
+      fromEnv = await tokenFromEnv(user);
+      if (!fromEnv) token = await ensureSmsToken(user.id);
     } catch {
       signedIn = false;
     }
   }
-  return json({ ok: true, ...state, signedIn, smsToken: token, smsTokenFromEnv: env.fromEnv("SMS_INGEST_TOKEN") });
+  return json({ ok: true, db: state.db, hasOwner: state.hasOwner, legacyPassphrase: state.legacyPassphrase, signedIn, onboarded, smsToken: token, smsTokenFromEnv: fromEnv });
 });
 
 const input = z.discriminatedUnion("action", [
@@ -50,14 +59,16 @@ export const POST = handle(async (req: Request) => {
     const origin = new URL(req.headers.get("origin")!).origin;
     const user = await claimInstall({ email, password, name: body.name }, origin);
     if (!user) throw new HttpError(409, "Mizan already has an owner. Sign in instead.");
-    return new Response(JSON.stringify({ ok: true, smsToken: savedSmsToken() }), { status: 200, headers: sessionHeaders(user.id, body.remember !== false) });
+    const smsToken = env.envSmsToken() ? null : await ensureSmsToken(user.id);
+    return new Response(JSON.stringify({ ok: true, smsToken }), { status: 200, headers: sessionHeaders(user.id, body.remember !== false) });
   }
 
-  await requireAdmin(req);
+  const { user } = await requireUser(req);
   if (body.action === "finish") {
-    await finishSetup();
+    await markOnboarded(user.id);
+    if (user.role === "admin") await finishSetup();
     return json({ ok: true });
   }
-  if (env.fromEnv("SMS_INGEST_TOKEN")) throw new HttpError(409, "The SMS token is set in your environment variables; change it there.");
-  return json({ ok: true, smsToken: await regenerateSmsToken() });
+  if (await tokenFromEnv(user)) throw new HttpError(409, "The SMS token is set in your environment variables; change it there.");
+  return json({ ok: true, smsToken: await regenerateSmsToken(user.id) });
 });

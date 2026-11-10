@@ -2,6 +2,7 @@ import "server-only";
 import { AuthError } from "./auth";
 import { ConfigError } from "./env";
 import { loadConfig } from "./config";
+import { withContext } from "./db";
 
 export function json(data: unknown, status = 200, headers: Record<string, string> = {}) {
   return new Response(JSON.stringify(data), {
@@ -50,7 +51,8 @@ export async function readJson(req: Request, maxBytes: number): Promise<unknown>
 
 /** Wraps a route handler with uniform, non-leaky error responses. */
 export function handle<A extends unknown[]>(fn: (...args: A) => Promise<Response>) {
-  return async (...args: A): Promise<Response> => {
+  // Each request gets its own database context; requireUser() says whose data it may touch.
+  return async (...args: A): Promise<Response> => withContext(async () => {
     try {
       await loadConfig();
       return await fn(...args);
@@ -66,5 +68,5 @@ export function handle<A extends unknown[]>(fn: (...args: A) => Promise<Response
       console.error("[mizan] unhandled error", (e as Error)?.name, code ?? "");
       return errorJson(500, "Something went wrong on the server");
     }
-  };
+  });
 }
