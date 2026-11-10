@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { env } from "./env";
 import { loadConfig } from "./config";
 import { hmac, safeEqual } from "./crypto";
+import { findUserById, type User } from "./users";
 
 export const SESSION_COOKIE = "mizan_session";
 export const CSRF_COOKIE = "mizan_csrf";
@@ -11,21 +12,21 @@ export const CSRF_COOKIE = "mizan_csrf";
 const REMEMBER_TTL_S = 180 * 24 * 3600;
 const SHORT_TTL_S = 12 * 3600;
 
-/** iat is when it was issued (epoch ms) and rem whether "Remember me" was on; sessions from before both existed lack them. */
-type Session = { sid: string; exp: number; iat?: number; rem?: boolean };
+/** uid is the signed-in account, iat when it was issued (epoch ms) and rem whether "Remember me" was on. */
+export type Session = { sid: string; uid: string; exp: number; iat: number; rem: boolean };
 
-export function issueSession(remember: boolean): { cookie: string; csrf: string; maxAge: number | null } {
+export function issueSession(uid: string, remember: boolean): { cookie: string; csrf: string; maxAge: number | null } {
   const ttl = remember ? REMEMBER_TTL_S : SHORT_TTL_S;
   const now = Date.now();
-  const payload: Session = { sid: crypto.randomBytes(18).toString("base64url"), exp: Math.floor(now / 1000) + ttl, iat: now, rem: remember };
+  const payload: Session = { sid: crypto.randomBytes(18).toString("base64url"), uid, exp: Math.floor(now / 1000) + ttl, iat: now, rem: remember };
   const body = Buffer.from(JSON.stringify(payload)).toString("base64url");
   const sig = hmac(env.sessionSecret(), `session:${body}`);
   return { cookie: `${body}.${sig}`, csrf: csrfFor(payload.sid), maxAge: remember ? ttl : null };
 }
 
 /** Set-Cookie headers for a new session. */
-export function sessionHeaders(remember: boolean): Headers {
-  const s = issueSession(remember);
+export function sessionHeaders(uid: string, remember: boolean): Headers {
+  const s = issueSession(uid, remember);
   const age = s.maxAge ? `; Max-Age=${s.maxAge}` : "";
   // The local Docker demo runs on plain http, where some browsers drop Secure cookies.
   const secure = process.env.NODE_ENV === "production" && process.env.COOKIE_SECURE !== "false" ? "; Secure" : "";
@@ -35,9 +36,12 @@ export function sessionHeaders(remember: boolean): Headers {
   return headers;
 }
 
-/** Whether a session was made with "Remember me", for sessions that predate the rem flag. */
-export function wasRemembered(s: Session): boolean {
-  return typeof s.rem === "boolean" ? s.rem : s.exp - Date.now() / 1000 > SHORT_TTL_S;
+/** Set-Cookie headers that sign this device out. */
+export function clearSessionHeaders(): Headers {
+  const headers = new Headers({ "content-type": "application/json", "cache-control": "no-store" });
+  headers.append("set-cookie", `${SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`);
+  headers.append("set-cookie", `${CSRF_COOKIE}=; Path=/; SameSite=Lax; Max-Age=0`);
+  return headers;
 }
 
 function csrfFor(sid: string): string {
@@ -51,22 +55,29 @@ export function parseSession(raw: string | undefined): Session | null {
   if (!safeEqual(sig, hmac(env.sessionSecret(), `session:${body}`))) return null;
   try {
     const s = JSON.parse(Buffer.from(body, "base64url").toString("utf8")) as Session;
-    if (typeof s.sid !== "string" || typeof s.exp !== "number") return null;
+    // Sessions from before accounts existed carry no uid and are refused, which signs everyone in again once.
+    if (typeof s.sid !== "string" || typeof s.uid !== "string" || typeof s.exp !== "number" || typeof s.iat !== "number") return null;
     if (s.exp < Date.now() / 1000) return null;
-    // Signed out by a passphrase change: anything issued before the cut-off (or with no issue time) is refused.
-    const cutoff = env.sessionsValidAfter();
-    if (cutoff && !(typeof s.iat === "number" && s.iat >= cutoff)) return null;
-    return s;
+    return { ...s, rem: s.rem === true };
   } catch {
     return null;
   }
 }
 
+/** The account behind a valid session, or null when it is gone, suspended, or signed out by a password change. */
+async function activeUser(s: Session): Promise<User | null> {
+  const user = await findUserById(s.uid);
+  if (!user || user.status !== "active") return null;
+  if (user.sessions_valid_after_ms && s.iat < user.sessions_valid_after_ms) return null;
+  return user;
+}
+
 /** For server components / layouts. */
-export async function getSession(): Promise<Session | null> {
+export async function getUser(): Promise<User | null> {
   await loadConfig();
   const jar = await cookies();
-  return parseSession(jar.get(SESSION_COOKIE)?.value);
+  const s = parseSession(jar.get(SESSION_COOKIE)?.value);
+  return s ? activeUser(s) : null;
 }
 
 export class AuthError extends Error {
@@ -75,11 +86,13 @@ export class AuthError extends Error {
   }
 }
 
+export type Authed = { user: User; session: Session };
+
 /**
- * Verifies the session cookie for an API request. For state-changing methods it also
- * requires a same-origin Origin header and a CSRF token bound to the session.
+ * Verifies the session cookie for an API request and loads its account. For state-changing methods it
+ * also requires a same-origin Origin header and a CSRF token bound to the session.
  */
-export function requireSession(req: Request): Session {
+export async function requireUser(req: Request): Promise<Authed> {
   const cookieHeader = req.headers.get("cookie") ?? "";
   const raw = readCookie(cookieHeader, SESSION_COOKIE);
   const session = parseSession(raw);
@@ -89,7 +102,16 @@ export function requireSession(req: Request): Session {
     const token = req.headers.get("x-csrf-token") ?? "";
     if (!token || !safeEqual(token, csrfFor(session.sid))) throw new AuthError(403, "Invalid CSRF token");
   }
-  return session;
+  const user = await activeUser(session);
+  if (!user) throw new AuthError(401, "Sign in required");
+  return { user, session };
+}
+
+/** Like requireUser, but only for an admin account. */
+export async function requireAdmin(req: Request): Promise<Authed> {
+  const a = await requireUser(req);
+  if (a.user.role !== "admin") throw new AuthError(403, "Admins only");
+  return a;
 }
 
 export function assertSameOrigin(req: Request) {

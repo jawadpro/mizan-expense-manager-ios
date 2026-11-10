@@ -22,3 +22,9 @@ export function verifyPassword(password: string, stored: string): boolean {
   });
   return expected.length === actual.length && crypto.timingSafeEqual(expected, actual);
 }
+
+export function hashPassword(pw: string): string {
+  const salt = crypto.randomBytes(16);
+  const hash = crypto.scryptSync(pw, salt, 32, { N: 16384, r: 8, p: 1 });
+  return `scrypt$16384$8$1$${salt.toString("base64url")}$${hash.toString("base64url")}`;
+}

@@ -1,10 +1,11 @@
 // End-to-end check against a running Mizan instance.
-// Usage: BASE_URL=https://... MIZAN_PASSWORD=... SMS_INGEST_TOKEN=... node scripts/e2e.mjs
+// Usage: BASE_URL=https://... MIZAN_EMAIL=... MIZAN_PASSWORD=... SMS_INGEST_TOKEN=... node scripts/e2e.mjs
 // Creates clearly-labelled E2E test records in the private workspace and deletes them at the end.
 const BASE = (process.env.BASE_URL || "http://localhost:3000").replace(/\/$/, "");
+const EMAIL = process.env.MIZAN_EMAIL;
 const PW = process.env.MIZAN_PASSWORD;
 const TOKEN = process.env.SMS_INGEST_TOKEN;
-if (!PW || !TOKEN) throw new Error("Set MIZAN_PASSWORD and SMS_INGEST_TOKEN");
+if (!EMAIL || !PW || !TOKEN) throw new Error("Set MIZAN_EMAIL, MIZAN_PASSWORD and SMS_INGEST_TOKEN");
 
 const results = [];
 const check = (name, ok, detail = "") => {
@@ -46,15 +47,15 @@ r = await call("/app", { auth: false });
 check("private workspace page redirects anonymous visitor", [302, 307, 308].includes(r.status) && String(r.res.headers.get("location")).includes("/login"), `HTTP ${r.status}`);
 
 // 3. Authentication
-r = await call("/api/auth/login", { method: "POST", body: { password: "wrong-passphrase" }, auth: false });
-check("wrong passphrase rejected", r.status === 401, `HTTP ${r.status}`);
-r = await call("/api/auth/login", { method: "POST", body: { password: PW, remember: false }, auth: false });
+r = await call("/api/auth/login", { method: "POST", body: { email: EMAIL, password: "wrong-password" }, auth: false });
+check("wrong password rejected", r.status === 401, `HTTP ${r.status}`);
+r = await call("/api/auth/login", { method: "POST", body: { email: EMAIL, password: PW, remember: false }, auth: false });
 check("without remember-me the cookie ends with the browser session", r.status === 200 && !(r.res.headers.getSetCookie?.() ?? []).some((c) => /Max-Age/i.test(c)));
-r = await call("/api/auth/login", { method: "POST", body: { password: PW, remember: true }, auth: false });
+r = await call("/api/auth/login", { method: "POST", body: { email: EMAIL, password: PW, remember: true }, auth: false });
 const setCookies = r.res.headers.getSetCookie?.() ?? [];
 cookie = setCookies.map((c) => c.split(";")[0]).join("; ");
 csrf = (setCookies.find((c) => c.startsWith("mizan_csrf=")) ?? "").split(";")[0].split("=")[1] ?? "";
-check("correct passphrase signs in with HttpOnly session cookie", r.status === 200 && setCookies.some((c) => c.startsWith("mizan_session=") && /HttpOnly/i.test(c)), `HTTP ${r.status}`);
+check("correct password signs in with HttpOnly session cookie", r.status === 200 && setCookies.some((c) => c.startsWith("mizan_session=") && /HttpOnly/i.test(c)), `HTTP ${r.status}`);
 check("remember-me keeps the device signed in for 180 days", setCookies.some((c) => c.startsWith("mizan_session=") && /Max-Age=15552000/i.test(c)));
 
 // 4. CSRF protection

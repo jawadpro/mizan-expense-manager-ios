@@ -3,13 +3,13 @@ import crypto from "node:crypto";
 import webpush from "web-push";
 import { q } from "./db";
 import { env, setStoredConfig, type StoredConfig } from "./env";
+import { countUsers, createFirstAdmin, type User } from "./users";
 
-// The settings the setup page saves (passphrase, signing secret, SMS token, notification keys).
+// The install-wide settings the setup page saves (signing secret, SMS token, notification keys).
 // Read once per instance and kept for a short while; before setup is finished it is read every time.
 
 const COLS =
-  "session_secret, password_hash, sms_token, vapid_public, vapid_private, vapid_subject, setup_done_at, " +
-  "(extract(epoch from sessions_valid_after) * 1000)::float8 AS sessions_valid_after_ms";
+  "session_secret, password_hash, sms_token, vapid_public, vapid_private, vapid_subject, setup_done_at";
 const TTL_MS = 30_000;
 let loadedAt = 0;
 let complete = false;
@@ -39,45 +39,40 @@ export async function loadConfig(force = false): Promise<DbState> {
   return db;
 }
 
-export type SetupState = { db: DbState; hasPassword: boolean; done: boolean };
+/**
+ * hasOwner: the install has its first (admin) account. legacyPassphrase: an install from before accounts
+ * existed, whose owner signs in once with the old passphrase to create that account.
+ */
+export type SetupState = { db: DbState; hasOwner: boolean; legacyPassphrase: boolean; done: boolean };
 
 export async function setupState(): Promise<SetupState> {
-  // An install configured by environment (like the original one) never sees the setup page.
-  if (process.env.ADMIN_PASSWORD_HASH) {
-    await loadConfig();
-    return { db: "ok", hasPassword: true, done: true };
+  const db = await loadConfig(!env.setupDone());
+  let hasOwner = false;
+  if (db === "ok") {
+    try {
+      hasOwner = (await countUsers()) > 0;
+    } catch {
+      hasOwner = false;
+    }
   }
-  const db = await loadConfig(true);
-  return { db, hasPassword: env.hasPassword(), done: env.setupDone() };
+  return { db, hasOwner, legacyPassphrase: !hasOwner && !!env.legacyPassphraseHash(), done: env.setupDone() };
 }
 
-export const MIN_PASSPHRASE = 12;
-
-export function hashPassword(pw: string): string {
-  const salt = crypto.randomBytes(16);
-  const hash = crypto.scryptSync(pw, salt, 32, { N: 16384, r: 8, p: 1 });
-  return `scrypt$16384$8$1$${salt.toString("base64url")}$${hash.toString("base64url")}`;
-}
 
 const secret = () => crypto.randomBytes(32).toString("base64url");
 
-/**
- * First run: saves the passphrase and creates the secrets the environment doesn't provide.
- * Returns false when a passphrase already exists, so a second visitor can't take over the install.
- */
-export async function claimInstall(password: string, origin: string): Promise<boolean> {
+/** Creates the secrets the environment doesn't provide. Never replaces one that exists. */
+export async function ensureInstallSecrets(origin: string) {
   const keys = env.vapid() ? null : webpush.generateVAPIDKeys();
-  const { rowCount } = await q(
-    `INSERT INTO app.config AS c (id, session_secret, password_hash, sms_token, vapid_public, vapid_private, vapid_subject)
-     VALUES (1, $1, $2, $3, $4, $5, $6)
+  await q(
+    `INSERT INTO app.config AS c (id, session_secret, sms_token, vapid_public, vapid_private, vapid_subject)
+     VALUES (1, $1, $2, $3, $4, $5)
      ON CONFLICT (id) DO UPDATE SET session_secret = coalesce(c.session_secret, EXCLUDED.session_secret),
-       password_hash = EXCLUDED.password_hash, sms_token = coalesce(c.sms_token, EXCLUDED.sms_token),
+       sms_token = coalesce(c.sms_token, EXCLUDED.sms_token),
        vapid_public = coalesce(c.vapid_public, EXCLUDED.vapid_public), vapid_private = coalesce(c.vapid_private, EXCLUDED.vapid_private),
-       vapid_subject = coalesce(c.vapid_subject, EXCLUDED.vapid_subject), updated_at = now()
-     WHERE c.password_hash IS NULL`,
+       vapid_subject = coalesce(c.vapid_subject, EXCLUDED.vapid_subject), updated_at = now()`,
     [
       env.fromEnv("SESSION_SECRET") ? null : secret(),
-      hashPassword(password),
       env.fromEnv("SMS_INGEST_TOKEN") ? null : secret(),
       keys?.publicKey ?? null,
       keys?.privateKey ?? null,
@@ -85,7 +80,23 @@ export async function claimInstall(password: string, origin: string): Promise<bo
     ],
   );
   await loadConfig(true);
-  return rowCount === 1;
+}
+
+/**
+ * First run: creates the admin account and the install's secrets. Returns null when an account already
+ * exists, so a second visitor can't take over the install.
+ */
+export async function claimInstall(input: { email: string; password: string; name?: string | null }, origin: string): Promise<User | null> {
+  const user = await createFirstAdmin(input);
+  if (!user) return null;
+  await ensureInstallSecrets(origin);
+  return user;
+}
+
+/** The old passphrase stops working once the owner has an account. */
+export async function forgetLegacyPassphrase() {
+  await q(`UPDATE app.config SET password_hash = NULL, updated_at = now() WHERE id = 1`);
+  await loadConfig(true);
 }
 
 export async function finishSetup() {
@@ -110,20 +121,4 @@ export async function regenerateSmsToken(): Promise<string> {
   await q(`UPDATE app.config SET sms_token = $1, updated_at = now() WHERE id = 1`, [token]);
   await loadConfig(true);
   return token;
-}
-
-/**
- * Saves a new passphrase. It wins over ADMIN_PASSWORD_HASH from then on, and every session issued
- * before now is signed out. Returns the cut-off (epoch ms) so the caller can issue a fresh session after it.
- */
-export async function changePassphrase(password: string): Promise<number> {
-  const cutoff = Date.now();
-  await q(
-    `INSERT INTO app.config AS c (id, password_hash, sessions_valid_after) VALUES (1, $1, to_timestamp($2::float8 / 1000))
-     ON CONFLICT (id) DO UPDATE SET password_hash = EXCLUDED.password_hash,
-       sessions_valid_after = EXCLUDED.sessions_valid_after, updated_at = now()`,
-    [hashPassword(password), cutoff],
-  );
-  await loadConfig(true);
-  return cutoff;
 }

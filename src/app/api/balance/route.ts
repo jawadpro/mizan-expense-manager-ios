@@ -1,4 +1,4 @@
-import { requireSession } from "@/lib/auth";
+import { requireUser } from "@/lib/auth";
 import { HttpError, handle, json, readJson } from "@/lib/http";
 import { getBalance, listSetAsides, setBalance } from "@/lib/repo";
 import { balanceInput } from "@/lib/validation";
@@ -12,12 +12,12 @@ async function summary() {
 }
 
 export const GET = handle(async (req: Request) => {
-  requireSession(req);
+  await requireUser(req);
   return json({ ok: true, ...(await summary()) });
 });
 
 export const PUT = handle(async (req: Request) => {
-  requireSession(req);
+  await requireUser(req);
   const parsed = balanceInput.safeParse(await readJson(req, 1024));
   if (!parsed.success) throw new HttpError(400, "Please fix the highlighted fields", { fields: parsed.error.flatten().fieldErrors });
   await setBalance(parsed.data.amount);

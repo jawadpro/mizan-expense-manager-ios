@@ -1,4 +1,4 @@
-import { requireSession } from "@/lib/auth";
+import { requireUser } from "@/lib/auth";
 import { errorJson, handle, json } from "@/lib/http";
 import { fetchMetalPrices } from "@/lib/metals";
 import { getPrefs } from "@/lib/repo";
@@ -6,7 +6,7 @@ import { getPrefs } from "@/lib/repo";
 export const dynamic = "force-dynamic";
 
 export const GET = handle(async (req: Request) => {
-  requireSession(req);
+  await requireUser(req);
   try {
     const { currency } = await getPrefs();
     return json({ ok: true, ...(await fetchMetalPrices(currency)) });

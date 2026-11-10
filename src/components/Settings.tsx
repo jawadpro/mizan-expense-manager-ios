@@ -14,7 +14,7 @@ import BankMessages from "./BankMessages";
 import BankList from "./BankList";
 import MessageTester from "./MessageTester";
 import { LimitModal, type LimitEdit } from "./SpendingCheck";
-import { ChangePassphraseModal } from "./ChangePassphrase";
+import { ChangePasswordModal } from "./ChangePassword";
 
 const rs = (p: number) => formatPaisa(Math.round(p)).replace(/\.\d\d$/, "");
 const RANGES: { id: Prefs["defaultRange"]; label: string }[] = [
@@ -57,6 +57,19 @@ function Section({ id, title, children }: { id: string; title: string; children:
 export default function Settings() {
   const { data, error, loading, reload } = useData<{ prefs: Prefs }>("/api/preferences");
   const limits = useData<{ items: { category: string; limit: number }[] }>("/api/limits");
+  const me = useData<{ user: { email: string; name: string | null; emailVerified: boolean } }>("/api/auth/me");
+  const [resending, setResending] = useState(false);
+  async function resendVerify() {
+    setResending(true);
+    try {
+      await apiFetch("/api/auth/verify", { method: "POST", body: JSON.stringify({ resend: true }) });
+      toast("We've sent you a new link. Check your inbox.", "ok");
+    } catch (e) {
+      toast((e as Error).message, "error");
+    } finally {
+      setResending(false);
+    }
+  }
   const [local, setLocal] = useState<Partial<Prefs>>({});
   const [edit, setEdit] = useState<LimitEdit | null>(null);
   const [theme, setTheme] = useTheme();
@@ -175,9 +188,14 @@ export default function Settings() {
             <div className="set-push"><PushToggle /></div>
           </Section>
 
-          <Section id="security" title="Sign-in">
-            <Row title="Passphrase" hint="Change the passphrase you sign in with. Other devices are signed out when you do.">
-              <button className="btn sm" onClick={() => setPassOpen(true)}>Change passphrase</button>
+          <Section id="security" title="Account">
+            <Row title="Email" hint={me.data ? (me.data.user.emailVerified ? me.data.user.email : <>{me.data.user.email} · not confirmed yet</>) : "…"}>
+              {me.data && !me.data.user.emailVerified && (
+                <button className="btn sm" onClick={resendVerify} disabled={resending}>{resending ? "Sending…" : "Send link again"}</button>
+              )}
+            </Row>
+            <Row title="Password" hint="Change the password you sign in with. Other devices are signed out when you do.">
+              <button className="btn sm" onClick={() => setPassOpen(true)} disabled={!me.data}>Change password</button>
             </Row>
           </Section>
 
@@ -189,12 +207,13 @@ export default function Settings() {
         </div>
       )}
 
-      {passOpen && (
-        <ChangePassphraseModal
+      {passOpen && me.data && (
+        <ChangePasswordModal
+          email={me.data.user.email}
           onClose={() => setPassOpen(false)}
           onDone={() => {
             setPassOpen(false);
-            toast("Passphrase changed. Other devices are signed out.", "ok");
+            toast("Password changed. Other devices are signed out.", "ok");
           }}
         />
       )}

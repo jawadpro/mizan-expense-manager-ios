@@ -13,8 +13,8 @@ import { useData } from "@/components/useData";
 import type { BankItem } from "@/components/useBanks";
 import type { DbState } from "@/lib/config";
 
-const STEPS = ["Database", "Passphrase", "Banks", "Your name", "iPhone", "Finish"] as const;
-const MIN_PASSPHRASE = 12;
+const STEPS = ["Database", "Account", "Banks", "Your name", "iPhone", "Finish"] as const;
+const MIN_PASSWORD = 10;
 
 function Stepper({ at }: { at: number }) {
   return (
@@ -50,19 +50,20 @@ function DatabaseStep({ db, next }: { db: DbState; next: () => void }) {
   );
 }
 
-function PassphraseStep({ next }: { next: () => void }) {
+function AccountStep({ next }: { next: () => void }) {
+  const [email, setEmail] = useState("");
   const [pw, setPw] = useState("");
   const [again, setAgain] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const short = pw.length > 0 && pw.length < MIN_PASSPHRASE;
+  const short = pw.length > 0 && pw.length < MIN_PASSWORD;
   const mismatch = again.length > 0 && again !== pw;
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
     setErr(null);
     try {
-      await apiFetch("/api/setup", { method: "POST", body: JSON.stringify({ action: "claim", password: pw, remember: true }) });
+      await apiFetch("/api/setup", { method: "POST", body: JSON.stringify({ action: "claim", email, password: pw, remember: true }) });
       next();
     } catch (ex) {
       setErr((ex as Error).message);
@@ -72,12 +73,15 @@ function PassphraseStep({ next }: { next: () => void }) {
   }
   return (
     <form onSubmit={submit}>
-      <h1>Choose a passphrase</h1>
-      <p className="muted">This is the only way into your Mizan. Use a few words you&apos;ll remember, at least {MIN_PASSPHRASE} characters. It can&apos;t be recovered, so keep it somewhere safe.</p>
+      <h1>Create your admin account</h1>
+      <p className="muted">This is the first account on this install, and it can manage everyone else&apos;s. Use at least {MIN_PASSWORD} characters for the password.</p>
       <div className="setup-form">
-        <label className="field">Passphrase
-          <input type="password" autoComplete="new-password" value={pw} onChange={(e) => setPw(e.target.value)} required autoFocus />
-          {short && <span className="hint">{MIN_PASSPHRASE - pw.length} more characters</span>}
+        <label className="field">Email
+          <input type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoFocus />
+        </label>
+        <label className="field">Password
+          <input type="password" autoComplete="new-password" value={pw} onChange={(e) => setPw(e.target.value)} required />
+          {short && <span className="hint">{MIN_PASSWORD - pw.length} more characters</span>}
         </label>
         <label className="field">Type it again
           <input type="password" autoComplete="new-password" value={again} onChange={(e) => setAgain(e.target.value)} required />
@@ -86,7 +90,7 @@ function PassphraseStep({ next }: { next: () => void }) {
       </div>
       {err && <div className="alert error" role="alert">{err}</div>}
       <div className="setup-actions">
-        <button className="btn primary" disabled={busy || pw.length < MIN_PASSPHRASE || again !== pw}>{busy ? "Saving…" : "Save and continue"}</button>
+        <button className="btn primary" disabled={busy || !email || pw.length < MIN_PASSWORD || again !== pw}>{busy ? "Saving…" : "Save and continue"}</button>
       </div>
     </form>
   );
@@ -224,8 +228,8 @@ function FinishStep({ back }: { back: () => void }) {
   );
 }
 
-export default function SetupWizard({ db, hasPassword, endpoint }: { db: DbState; hasPassword: boolean; endpoint: string }) {
-  const [at, setAt] = useState(hasPassword ? 2 : 0);
+export default function SetupWizard({ db, hasOwner, endpoint }: { db: DbState; hasOwner: boolean; endpoint: string }) {
+  const [at, setAt] = useState(hasOwner ? 2 : 0);
   useEffect(() => {
     window.scrollTo({ top: 0 });
   }, [at]);
@@ -236,7 +240,7 @@ export default function SetupWizard({ db, hasPassword, endpoint }: { db: DbState
       <Stepper at={at} />
       <div className="card setup-card">
         {at === 0 && <DatabaseStep db={db} next={go(1)} />}
-        {at === 1 && <PassphraseStep next={go(2)} />}
+        {at === 1 && <AccountStep next={go(2)} />}
         {at === 2 && <BanksStep next={go(3)} />}
         {at === 3 && <NameStep back={go(2)} next={go(4)} />}
         {at === 4 && <IphoneStep endpoint={endpoint} back={go(3)} next={go(5)} />}

@@ -117,7 +117,7 @@ This takes about 10 minutes, and **only one setting is required**. The app walks
    Click **Deploy**. The build creates the database tables for you.
 4. **Open your new app** (`https://your-app.vercel.app`). A short setup wizard takes you through:
    1. **Database:** checks the connection.
-   2. **Passphrase:** the one passphrase you'll sign in with.
+   2. **Admin account:** the email and password you'll sign in with. This first account is the install's admin.
    3. **Banks:** the banks you get alerts from and their SMS sender names.
    4. **Currency, your name, and a test:** pick your currency, enter your name as banks print it (so transfers between your own accounts aren't counted as spending), and paste a real alert to check that Mizan reads it correctly.
    5. **iPhone:** your SMS token and the ready-made Shortcuts (see below).
@@ -147,7 +147,7 @@ This lets you try Mizan with sample data, with no accounts needed:
 docker compose up --build
 ```
 
-Open <http://localhost:3000> and sign in with the passphrase **`mizan-demo-2026`**. Everything is made up and stays on your computer.
+Open <http://localhost:3000> and sign in as **`demo@mizan.local`** with the password **`mizan-demo-2026`**. Everything is made up and stays on your computer.
 
 To see the first-run setup wizard on an empty database instead:
 
@@ -172,7 +172,7 @@ npm run dev                       # http://localhost:3000
 | `npm test` | Unit tests (SMS parser, money, insights, Zakat and more) |
 | `npm run typecheck` | TypeScript check |
 | `npm run migrate` | Apply `migrations/*.sql` (safe to run repeatedly) |
-| `npm run hash-password -- 'passphrase'` | Make a passphrase hash for `ADMIN_PASSWORD_HASH` |
+| `node scripts/create-admin.mjs email 'password'` | Create the admin account on an empty database |
 | `npm run e2e` | End-to-end checks against a running instance (`BASE_URL`, `MIZAN_PASSWORD`, `SMS_INGEST_TOKEN`) |
 
 **Project layout**
@@ -188,12 +188,16 @@ tests/            Vitest unit tests
 
 ## Configuration
 
+**Upgrading from the passphrase version.** After you deploy this version, the sign-in page asks for your old passphrase once, then for the email and password you'll use from now on. All your data moves into that account, which becomes the admin, and the passphrase stops working.
+
 Only `DATABASE_URL` is required. Everything else is either created by the setup wizard and stored in your database, or optional. A value set as an environment variable always overrides the stored one. See [`.env.example`](.env.example).
 
 | Variable | Purpose |
 |---|---|
 | `DATABASE_URL` | **Required.** Postgres connection string (pooled, `sslmode=require`). |
-| `ADMIN_PASSWORD_HASH` | Optional. Passphrase hash; if set, the passphrase step is skipped. |
+| `RESEND_API_KEY`, `EMAIL_FROM` | Recommended. Sends email-confirmation and password-reset emails through [Resend](https://resend.com). `EMAIL_FROM` looks like `Mizan <hello@yourdomain.com>`. |
+| `APP_URL` | Optional. The public address used in links in emails, e.g. `https://mizan.example.com`. Defaults to the address the request came to. |
+| `ADMIN_PASSWORD_HASH` | Only for installs from before accounts existed: the old passphrase, used once to create the admin account. |
 | `SESSION_SECRET` | Optional. 32+ random characters for signing sessions. |
 | `SMS_INGEST_TOKEN` | Optional. 32+ random characters; the token the Shortcut sends. |
 | `SMS_AUTO_IMPORT` | Optional. Set to `false` to send every alert to the Review inbox. |
@@ -204,7 +208,7 @@ Only `DATABASE_URL` is required. Everything else is either created by the setup 
 
 ## Privacy and security
 
-- **Single owner.** There's one passphrase, stored only as a scrypt hash. Every page and API route checks the session on the server.
+- **Accounts.** Everyone signs in with an email and password, stored only as a scrypt hash. Every page and API route checks the session and the account on the server. Changing or resetting a password signs out every other device, and reset links work once, for one hour.
 - **Hardened sessions.** Cookies are signed, HttpOnly, Secure and SameSite. Every write needs a CSRF token and a same-origin request. Sign-in and SMS endpoints are rate limited.
 - **SMS is data, never instructions.** Only alerts from senders you trust are accepted, and OTPs and promotional messages are ignored. Only a redacted copy of an unclear alert is kept, and it is deleted once you resolve it.
 - **No duplicates.** Re-sent alerts are detected by a fingerprint and the bank's reference number.
@@ -215,7 +219,7 @@ Only `DATABASE_URL` is required. Everything else is either created by the setup 
 - **iPhone only for SMS forwarding.** Automatic import uses iOS Shortcuts automations. On other phones you can still add transactions by hand or post to the `/api/sms` endpoint yourself.
 - **Built around South Asian bank alerts.** The built-in reader is tuned for Pakistani banks (MCB, UBL and others) and `PKR`/`Rs` amounts. You can teach it other banks from a pasted example, but expect a few alerts in the Review inbox at first.
 - **One currency.** The currency you choose changes how amounts are shown. Amounts are never converted between currencies.
-- **One user.** There's no sign-up and no shared accounts. If you forget the passphrase, set a new `ADMIN_PASSWORD_HASH` in Vercel.
+- **Sign-ups are closed for now.** Only the admin account exists until each account's data is kept separate; that comes next.
 - **Free-tier hosting.** Neon suspends an idle database, so the first load after a pause takes a second or two longer.
 
 ## Tech stack

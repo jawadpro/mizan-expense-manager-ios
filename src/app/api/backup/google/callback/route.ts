@@ -1,4 +1,4 @@
-import { readCookie, requireSession } from "@/lib/auth";
+import { readCookie, requireUser } from "@/lib/auth";
 import { safeEqual } from "@/lib/crypto";
 import { handle } from "@/lib/http";
 import { DriveError, connect } from "@/lib/gdrive";
@@ -7,7 +7,7 @@ import { STATE_COOKIE, publicOrigin } from "@/lib/oauth-state";
 export const dynamic = "force-dynamic";
 
 export const GET = handle(async (req: Request) => {
-  requireSession(req);
+  await requireUser(req);
   const origin = publicOrigin(req);
   const url = new URL(req.url);
   const back = (result: string) =>

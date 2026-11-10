@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import Shell from "@/components/Shell";
-import { getSession } from "@/lib/auth";
+import { getUser } from "@/lib/auth";
 import { setupState } from "@/lib/config";
 import { DEFAULT_CURRENCY } from "@/lib/money";
 import { getPrefs } from "@/lib/repo";
@@ -12,7 +12,7 @@ export const metadata = { title: "Workspace" };
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   let ok = false;
   try {
-    ok = !!(await getSession());
+    ok = !!(await getUser());
   } catch {
     ok = false;
   }

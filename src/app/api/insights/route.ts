@@ -1,4 +1,4 @@
-import { requireSession } from "@/lib/auth";
+import { requireUser } from "@/lib/auth";
 import { handle, json } from "@/lib/http";
 import { buildInsights } from "@/lib/insights";
 import { setDisplayCurrency } from "@/lib/money";
@@ -8,7 +8,7 @@ import { todayPkt } from "@/lib/time";
 export const dynamic = "force-dynamic";
 
 export const GET = handle(async (req: Request) => {
-  requireSession(req);
+  await requireUser(req);
   const today = todayPkt();
   const [data, balance, funds, prefs] = await Promise.all([spendingCheckData(today), getBalance(), listSetAsides(), getPrefs()]);
   const setAside = funds.reduce((a, f) => a + Math.max(0, f.remaining), 0);

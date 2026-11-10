@@ -1,5 +1,5 @@
 # Local demo: `docker compose up --build`, then open http://localhost:3000
-# Sign in with the passphrase mizan-demo-2026. All data here is made up and stays on this computer.
+# Sign in as demo@mizan.local with the password mizan-demo-2026. All data here is made up and stays on this computer.
 services:
   db:
     image: postgres:16-alpine
