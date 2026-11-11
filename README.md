@@ -23,7 +23,7 @@ You run your own copy for free on Vercel and Neon, and you install it on your iP
 - [What you need](#what-you-need)
 - [Setup: deploy your own copy](#setup-deploy-your-own-copy)
 - [Setup: connect your iPhone](#setup-connect-your-iphone)
-- [Try it locally with Docker](#try-it-locally-with-docker)
+- [Self-host with Docker](#self-host-with-docker)
 - [Local development](#local-development)
 - [Configuration](#configuration)
 - [Privacy and security](#privacy-and-security)
@@ -139,22 +139,19 @@ You'll find these steps, with your own URL and token filled in, under **SMS setu
 
 **Using a bank Mizan doesn't know yet?** Go to **Settings → Bank messages** and paste one example alert. Mizan learns that bank's format from it, and **Test a message** shows exactly what it reads.
 
-## Try it locally with Docker
+## Self-host with Docker
 
-This lets you try Mizan with sample data, with no accounts needed:
-
-```bash
-docker compose up --build
-```
-
-Open <http://localhost:3000> and sign in with the passphrase **`mizan-demo-2026`**. Everything is made up and stays on your computer.
-
-To see the first-run setup wizard on an empty database instead:
+Prefer your own computer or server to Vercel? This starts Mizan on an empty database:
 
 ```bash
-docker compose -f docker-compose.setup.yml up --build -d   # http://localhost:3001
-docker compose -f docker-compose.setup.yml down -v         # remove it again
+docker compose up --build -d
 ```
+
+Open <http://localhost:3000> and the setup wizard takes you through the same steps as above. Your data stays in a Docker volume on that machine. Stop it with `docker compose down`, and add `-v` only if you want to erase your data.
+
+**Only want a look?** `docker compose -f docker-compose.demo.yml up --build -d` starts a separate copy filled with made-up sample data at <http://localhost:3002> (passphrase `mizan-demo-2026`). It's for trying the app and taking screenshots, never for real use. Remove it with `docker compose -f docker-compose.demo.yml down -v`.
+
+**Setting Mizan up with an AI assistant?** It's fine to ask one to deploy it for you. The repository's [`AGENTS.md`](AGENTS.md) tells assistants never to add sample data or skip the wizard: you start empty and choose your own passphrase, banks and name in the setup wizard.
 
 ## Local development
 
@@ -182,7 +179,7 @@ src/app/          Pages (Next.js App Router) and API routes under src/app/api
 src/components/   UI components
 src/lib/          Business logic: money, SMS parsing (src/lib/sms), banks, Zakat, backups
 migrations/       SQL migrations, applied in order
-scripts/          Migrate, seed demo data, password hashing, end-to-end checks
+scripts/          Migrate, sample data for the local demo, password hashing, end-to-end checks
 tests/            Vitest unit tests
 ```
 
@@ -193,7 +190,7 @@ Only `DATABASE_URL` is required. Everything else is either created by the setup 
 | Variable | Purpose |
 |---|---|
 | `DATABASE_URL` | **Required.** Postgres connection string (pooled, `sslmode=require`). |
-| `ADMIN_PASSWORD_HASH` | Optional. Passphrase hash; if set, the passphrase step is skipped. |
+| `ADMIN_PASSWORD_HASH` | Optional, and best left empty: if set, the setup wizard is skipped. |
 | `SESSION_SECRET` | Optional. 32+ random characters for signing sessions. |
 | `SMS_INGEST_TOKEN` | Optional. 32+ random characters; the token the Shortcut sends. |
 | `SMS_AUTO_IMPORT` | Optional. Set to `false` to send every alert to the Review inbox. |
