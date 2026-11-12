@@ -55,7 +55,7 @@ Most expense apps want your bank login or ask you to log every purchase yourself
 | **Set-asides** | Rules such as "10% of every remittance for charity". Mizan tracks what has built up and what you've paid out. |
 | **Zakat** | Checks your savings against the gold or silver nisab using live metal prices, and keeps a record of each year's Zakat. |
 | **Any bank, any currency** | Add your banks and teach Mizan a new bank's alert format by pasting one example. You can show amounts in PKR, INR, USD, GBP, EUR, AED, SAR and more. |
-| **Push notifications** | Get notified on your iPhone when an alert needs review. |
+| **Push notifications** | Get notified on your iPhone when a payment is imported ("Spent Rs 2,450 · Imtiaz") or an alert needs review. Amounts and names can be hidden in Settings. |
 | **Backups** | Nightly backups to your own Google Drive, plus a one-tap download. |
 | **Light and dark mode** | Follows your iPhone's setting, or pick one yourself. |
 
