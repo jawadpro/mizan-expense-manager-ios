@@ -50,11 +50,12 @@ Most expense apps want your bank login or ask you to log every purchase yourself
 | **Dashboard** | Expenses, income and net flow for any period, compared with the period before, plus spending trends, categories and top recipients. |
 | **Transactions and calendar** | Search, filter, edit, add cash spending by hand, export to CSV, or see every payment on a day, week or month calendar. |
 | **Monthly payments** | A checklist for rent, bills and fees that starts fresh each month and suggests the matching payment so you can tick it off in one tap. |
+| **Bill splits** | Paid for everyone? Split a payment between people, share each person a receipt image from your phone, and tick their share off when their money comes in. Mizan spots the repayment for you. |
 | **Spending check** | Set monthly limits per category and get a gentle nudge when spending runs ahead of usual. |
 | **Set-asides** | Rules such as "10% of every remittance for charity". Mizan tracks what has built up and what you've paid out. |
 | **Zakat** | Checks your savings against the gold or silver nisab using live metal prices, and keeps a record of each year's Zakat. |
 | **Any bank, any currency** | Add your banks and teach Mizan a new bank's alert format by pasting one example. You can show amounts in PKR, INR, USD, GBP, EUR, AED, SAR and more. |
-| **Push notifications** | Get notified on your iPhone when an alert needs review. |
+| **Push notifications** | Get notified on your iPhone when a payment is imported ("Spent Rs 2,450 · Imtiaz") or an alert needs review. Amounts and names can be hidden in Settings. |
 | **Backups** | Nightly backups to your own Google Drive, plus a one-tap download. |
 | **Light and dark mode** | Follows your iPhone's setting, or pick one yourself. |
 

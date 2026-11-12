@@ -10,16 +10,60 @@ import { apiFetch, resourceUrl, type Space } from "./api";
 import { useData } from "./useData";
 import { Empty, ErrorBox, Loading } from "./States";
 import TxForm, { draftFrom, type TxDraft } from "./TxForm";
+import DateRangePicker from "./DateRangePicker";
 import { useBanks } from "./useBanks";
 import { useChargesEdit } from "./ChargesField";
 import { useToast } from "./Toast";
 import type { Tx } from "./types";
+import SplitForm from "./SplitForm";
+import "@/app/splits.css";
 
 type List = { items: Tx[]; total: number; page: number; pageSize: number; sums: { expense: number; income: number; remittance: number } };
 
-/** The line shown for a charge tucked under its transfer, e.g. "Charges on this transfer". */
-function chargeLabel(c: Tx) {
-  return c.category === "Tax deducted" ? "Tax on this transfer" : "Charges on this transfer";
+/** "−Rs 10,025 in all": the transfer plus its charges, under the transfer's amount. */
+function totalLabel(t: Tx, charges: Tx[]) {
+  const sum = t.amount_paisa + charges.reduce((n, c) => n + c.amount_paisa, 0);
+  return `${t.kind === "expense" ? "−" : ""}${formatPaisa(sum)} in all`;
+}
+
+const isChargeCategory = (c: string) => c === "Bank charges" || c === "Tax deducted";
+
+/** A bank charge or tax shown as a small badge on the transfer it belongs to. Tapping it opens the charge. */
+function ChargeBadge({ c, onOpen }: { c: Tx; onOpen?: (c: Tx) => void }) {
+  const tax = c.category === "Tax deducted";
+  const body = (
+    <>
+      <span className="charge-badge-icon" aria-hidden>{tax ? "%" : "₨"}</span>
+      <span className="charge-badge-label">{tax ? "Tax" : "Bank charge"}</span>
+      <span className="charge-badge-amt">−{formatPaisa(c.amount_paisa)}</span>
+    </>
+  );
+  return onOpen ? (
+    <button type="button" className={`charge-badge${tax ? " tax" : ""}`} onClick={(e) => { e.stopPropagation(); onOpen(c); }} title={`Edit this ${tax ? "tax" : "charge"}`}>{body}</button>
+  ) : <span className={`charge-badge${tax ? " tax" : ""}`}>{body}</span>;
+}
+
+/** The category, with bank charges and tax picked out as a badge so they stand apart from spending. */
+function CategoryCell({ category }: { category: string }) {
+  if (!isChargeCategory(category)) return <>{category}</>;
+  const tax = category === "Tax deducted";
+  return <span className={`charge-cat${tax ? " tax" : ""}`}><span className="charge-badge-icon" aria-hidden>{tax ? "%" : "₨"}</span>{category}</span>;
+}
+
+/** Whether a payment can be split between people: money paid out, but not a bank charge or tax. */
+const canSplit = (t: Tx) => t.kind === "expense" && !isChargeCategory(t.category);
+
+/** "Split · 2 owe you" on a split payment; "Paid back · Ali" on money that paid a share back. */
+function SplitBadge({ t, onOpen }: { t: Tx; onOpen?: (t: Tx) => void }) {
+  if (t.split) {
+    const open = t.split.open;
+    const label = open ? `Split · ${open} owe${open === 1 ? "s" : ""} you` : "Split · all paid back";
+    return <div>{onOpen ? (
+      <button type="button" className={`split-badge${open ? "" : " done"}`} onClick={(e) => { e.stopPropagation(); onOpen(t); }} title="See the shares">{label}</button>
+    ) : <span className={`split-badge${open ? "" : " done"}`}>{label}</span>}</div>;
+  }
+  if (t.repays) return <div><span className="split-badge repays">Paid back · {t.repays}</span></div>;
+  return null;
 }
 
 /** What a day's transactions add up to, shown on the right of its header. */
@@ -57,6 +101,8 @@ export default function Transactions({ space, fixedCounterparty }: { space: Spac
   const [page, setPage] = useState(1);
   const [editing, setEditing] = useState<Tx | "new" | null>(null);
   const chargesEdit = useChargesEdit();
+  const [splitting, setSplitting] = useState<string | null>(null);
+  const openSplit = (t: Tx) => { setEditing(null); setSplitting(t.id); };
   const edit = (t: Tx | "new") => { chargesEdit.start(t); setEditing(t); };
   const dq = useDebounced(q);
   const filters = { q: dq, kind, category, source, bank, from, to, counterparty: fixedCounterparty };
@@ -141,13 +187,15 @@ export default function Transactions({ space, fixedCounterparty }: { space: Spac
                 <option value="none">No bank</option>
               </select>
             )}
-            <input type="date" aria-label="From date" value={from} max={to || undefined} onChange={(e) => setFrom(e.target.value)} />
-            <input type="date" aria-label="To date" value={to} min={from || undefined} onChange={(e) => setTo(e.target.value)} />
+            <DateRangePicker from={from} to={to} onChange={(f, t) => { setFrom(f); setTo(t); }} />
             {hasFilters && <button className="btn ghost sm" onClick={() => { setQ(""); setKind(""); setCategory(""); setSource(""); setBank(""); setFrom(""); setTo(""); }}>Clear</button>}
           </div>
           {data && (
-            <div className="small muted" style={{ marginTop: 10 }}>
-              {data.total} result{data.total === 1 ? "" : "s"} · <span className="amt expense">{formatPaisa(data.sums.expense)}</span> out · <span className="amt income">{formatPaisa(data.sums.income)}</span> income · <span className="amt remittance">{formatPaisa(data.sums.remittance)}</span> remittances
+            <div className={`tx-summary${loading ? " loading" : ""}`} aria-live="polite">
+              <span className="sum-pill count"><b>{data.total.toLocaleString("en-PK")}</b> result{data.total === 1 ? "" : "s"}</span>
+              <span className="sum-pill expense"><span className="sum-ico" aria-hidden>↑</span><span className="sum-label">Out</span><span className="amt">{formatPaisa(data.sums.expense)}</span></span>
+              <span className="sum-pill income"><span className="sum-ico" aria-hidden>↓</span><span className="sum-label">Income</span><span className="amt">{formatPaisa(data.sums.income)}</span></span>
+              <span className="sum-pill remittance"><span className="sum-ico" aria-hidden>⇄</span><span className="sum-label">Remittances</span><span className="amt">{formatPaisa(data.sums.remittance)}</span></span>
             </div>
           )}
         </div>
@@ -200,28 +248,22 @@ export default function Transactions({ space, fixedCounterparty }: { space: Spac
                     {groupCharges(g.items).map(({ t, charges }) => (<Fragment key={t.id}>
                     <tr className={charges.length ? "has-charges" : undefined}>
                       <td className="num muted" style={{ whiteSpace: "nowrap" }}>{formatTimePkt(t.occurred_at)}</td>
-                      <td>{t.counterparty ?? <span className="muted">—</span>}{t.note && <div className="small muted">{t.note}</div>}</td>
-                      <td>{t.category}</td>
+                      <td>
+                        {t.counterparty ?? <span className="muted">—</span>}{t.note && <div className="small muted">{t.note}</div>}
+                        {charges.length > 0 && <div className="charge-badges">{charges.map((c) => <ChargeBadge key={c.id} c={c} onOpen={readOnly ? undefined : edit} />)}</div>}
+                        <SplitBadge t={t} onOpen={readOnly ? undefined : openSplit} />
+                      </td>
+                      <td><CategoryCell category={t.category} /></td>
                       <td><span className={`pill ${t.kind}`}>{KIND_LABEL[t.kind]}</span></td>
                       <td>{t.source === "sms" ? <span className="pill sms" title={t.account_hint ? `Account ending ${t.account_hint}` : undefined}>{(multi && nameOf(t.bank_id)) || "SMS"}</span> : <span className="pill">{t.source === "demo" ? "Demo" : (multi && nameOf(t.bank_id)) ? `${nameOf(t.bank_id)} · Manual` : "Manual"}</span>}</td>
-                      <td className={`amt ${t.kind}`}>{t.kind === "expense" ? "−" : "+"}{formatPaisa(t.amount_paisa).replace(" ", "\u00a0")}</td>
+                      <td className={`amt ${t.kind}`}>
+                        {t.kind === "expense" ? "−" : "+"}{formatPaisa(t.amount_paisa).replace(" ", "\u00a0")}
+                        {charges.length > 0 && <div className="charge-total">{totalLabel(t, charges)}</div>}
+                      </td>
                       {!readOnly && (
-                        <td><div className="row-actions"><button className="btn sm" onClick={() => edit(t)}>Edit</button><button className="btn sm danger" onClick={() => remove(t)}>Delete</button></div></td>
+                        <td><div className="row-actions">{canSplit(t) && <button className="btn sm" onClick={() => openSplit(t)} title="Split this payment with others">Split</button>}<button className="btn sm" onClick={() => edit(t)}>Edit</button><button className="btn sm danger" onClick={() => remove(t)}>Delete</button></div></td>
                       )}
                     </tr>
-                    {charges.map((c, i) => (
-                      <tr key={c.id} className={`charge-row${i === charges.length - 1 ? " last" : ""}`}>
-                        <td></td>
-                        <td><span className="charge-elbow" aria-hidden="true" />{chargeLabel(c)}</td>
-                        <td>{c.category}</td>
-                        <td></td>
-                        <td>{multi && nameOf(c.bank_id) ? <span className="muted small">{nameOf(c.bank_id)}</span> : null}</td>
-                        <td className={`amt ${c.kind}`}>−{formatPaisa(c.amount_paisa)}</td>
-                        {!readOnly && (
-                          <td><div className="row-actions"><button className="btn sm" onClick={() => edit(c)}>Edit</button><button className="btn sm danger" onClick={() => remove(c)}>Delete</button></div></td>
-                        )}
-                      </tr>
-                    ))}
                     </Fragment>))}
                   </Fragment>))}
                 </tbody>
@@ -233,18 +275,17 @@ export default function Transactions({ space, fixedCounterparty }: { space: Spac
                 {groupCharges(g.items).map(({ t, charges }) => (
                 <div key={t.id} className={charges.length ? "tx-group" : "tx-group plain"}>
                 <div className="tx-card" onClick={() => !readOnly && edit(t)} role={readOnly ? undefined : "button"} tabIndex={readOnly ? undefined : 0}>
-                  <div>
+                  <div style={{ minWidth: 0 }}>
                     <div style={{ fontWeight: 600 }}>{t.counterparty ?? t.category}</div>
-                    <div className="meta">{formatTimePkt(t.occurred_at)} · {t.category}{t.source === "sms" ? " · SMS" : ""}</div>
+                    <div className="meta">{formatTimePkt(t.occurred_at)} · {isChargeCategory(t.category) ? <CategoryCell category={t.category} /> : t.category}{t.source === "sms" ? " · SMS" : ""}</div>
+                    {charges.length > 0 && <div className="charge-badges">{charges.map((c) => <ChargeBadge key={c.id} c={c} onOpen={readOnly ? undefined : edit} />)}</div>}
+                    <SplitBadge t={t} onOpen={readOnly ? undefined : openSplit} />
                   </div>
-                  <div className={`amt ${t.kind}`} style={{ fontWeight: 600, whiteSpace: "nowrap" }}>{t.kind === "expense" ? "−" : "+"}{formatPaisa(t.amount_paisa)}</div>
+                  <div style={{ textAlign: "right", flex: "none" }}>
+                    <div className={`amt ${t.kind}`} style={{ fontWeight: 600, whiteSpace: "nowrap" }}>{t.kind === "expense" ? "−" : "+"}{formatPaisa(t.amount_paisa)}</div>
+                    {charges.length > 0 && <div className="charge-total">{totalLabel(t, charges)}</div>}
+                  </div>
                 </div>
-                {charges.map((c) => (
-                  <div key={c.id} className="charge-child" onClick={() => !readOnly && edit(c)} role={readOnly ? undefined : "button"} tabIndex={readOnly ? undefined : 0}>
-                    <span><strong>{c.category}</strong>{multi && nameOf(c.bank_id) ? ` · ${nameOf(c.bank_id)}` : ""}</span>
-                    <span className={`amt ${c.kind}`}>−{formatPaisa(c.amount_paisa)}</span>
-                  </div>
-                ))}
                 </div>
                 ))}
               </Fragment>))}
@@ -271,6 +312,12 @@ export default function Transactions({ space, fixedCounterparty }: { space: Spac
           onClose={() => setEditing(null)}
           onSubmit={(d) => save(d, editing === "new" ? undefined : editing.id)}
           onDelete={editing === "new" ? undefined : () => destroy(editing.id)}
+          children={editing !== "new" && !readOnly && canSplit(editing) ? (
+            <div className="split-cta">
+              <span className="small">{editing.split ? `Split with ${editing.split.n} ${editing.split.n === 1 ? "person" : "people"}` : "Paid for others too?"}</span>
+              <button type="button" className="btn sm" onClick={() => openSplit(editing)}>{editing.split ? "See shares" : "Split this payment"}</button>
+            </div>
+          ) : undefined}
           extra={editing === "new" ? undefined : (d, fieldErrors) =>
             d.kind === "expense" && d.category !== "Bank charges" && d.category !== "Tax deducted" && (
               chargesEdit.field(d, fieldErrors.charges?.[0])
@@ -278,6 +325,7 @@ export default function Transactions({ space, fixedCounterparty }: { space: Spac
           }
         />
       )}
+      {splitting && <SplitForm billId={splitting} onClose={() => { setSplitting(null); reload(); }} onChanged={reload} />}
     </>
   );
 }
