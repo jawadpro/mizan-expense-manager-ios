@@ -136,8 +136,8 @@ Open **Connect iPhone** in the app's menu. The dot beside it is red until an iPh
    itself: nothing to copy or type. Mizan shows the iPhone as connected once the phone confirms it saved the key.
 4. Create the automation: in **Shortcuts → Automation**, tap **+ → Message**, set **Sender** to your bank's name or
    short code, choose **Run Immediately**, and pick the **Mizan** Shortcut. Repeat for each bank.
-5. Tap the Mizan Shortcut once by hand to send a test, then wait for your next bank alert. It appears in Mizan within
-   a few seconds.
+
+Your next bank alert appears in Mizan within a few seconds.
 
 No internet when an alert arrives? The Shortcut keeps it. Back online, open the **Review inbox** on your iPhone and tap
 **Import queued messages**. See [`docs/iphone-pairing.md`](docs/iphone-pairing.md) for how pairing works.
