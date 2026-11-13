@@ -100,7 +100,7 @@ export default function PushToggle() {
           <div className="small muted">
             {state === "on" && "This device gets a notification when an alert needs your review."}
             {state === "off" && "Get a notification on this device when an alert needs your review. It never shows the SMS or the amount."}
-            {state === "ios-browser" && "On iPhone, add Mizan to your Home Screen first: tap Share, then Add to Home Screen, and open Mizan from the new icon. Needs iOS 16.4 or later."}
+            {state === "ios-browser" && "On iPhone, add Mizan to your Home Screen first: tap Share, then Add to Home Screen, and open Mizan from the new icon. Needs iOS 26 or later."}
             {state === "unsupported" && "This browser can't receive notifications."}
             {state === "denied" && "Notifications are blocked for Mizan. Allow them in your device settings, then come back here."}
             {state === "unconfigured" && "Notifications aren't set up on the server yet."}
