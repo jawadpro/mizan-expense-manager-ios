@@ -22,13 +22,22 @@ const als = new AsyncLocalStorage<Ctx>();
 const TENANT_ROLE = "mizan_tenant";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+/**
+ * Each connection holds per-session state (SET ROLE, mizan.uid), so it must be a real session. A transaction
+ * pooler such as Neon's "-pooler" host hands each statement to whichever server connection is free, which
+ * would carry one account's mizan.uid and role into another client's queries. Use Neon's direct host instead.
+ */
+export function directUrl(url: string): string {
+  return url.replace(/(@[^/:?]*?)-pooler\./, "$1.");
+}
+
 let pool: Pool | undefined;
 /** Connections that have already switched to the tenant role. */
 const ready = new WeakSet<PoolClient>();
 
 function getPool(): Pool {
   if (!pool) {
-    const url = env.databaseUrl();
+    const url = directUrl(env.databaseUrl());
     // A database on this machine or inside Docker Compose has no TLS.
     const local = /@(localhost|127\.0\.0\.1)[:/]/.test(url) || process.env.DATABASE_SSL === "false";
     pool = new Pool({

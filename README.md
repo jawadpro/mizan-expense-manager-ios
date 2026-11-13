@@ -107,7 +107,7 @@ You don't need a Mac, Xcode or an Apple Developer account. Mizan is a web app yo
 This takes about 10 minutes, and **only one setting is required**. The app walks you through the rest.
 
 1. **Fork this repository** to your GitHub account.
-2. **Create a database.** In Neon, create a project and copy its **pooled** connection string. It looks like `postgresql://user:pass@ep-xxx-pooler.region.aws.neon.tech/neondb?sslmode=require`.
+2. **Create a database.** In Neon, create a project and copy its **direct** connection string (turn off "Connection pooling"). It looks like `postgresql://user:pass@ep-xxx.region.aws.neon.tech/neondb?sslmode=require`.
 3. **Deploy on Vercel.** Choose **Add New → Project**, import your fork, and add one environment variable:
 
    | Name | Value |
@@ -194,7 +194,7 @@ Only `DATABASE_URL` is required. Its user must be allowed to create roles (Neon'
 
 | Variable | Purpose |
 |---|---|
-| `DATABASE_URL` | **Required.** Postgres connection string (pooled, `sslmode=require`). |
+| `DATABASE_URL` | **Required.** Postgres connection string (direct, not pooled; `sslmode=require`). |
 | `RESEND_API_KEY`, `EMAIL_FROM` | Recommended. Sends email-confirmation and password-reset emails through [Resend](https://resend.com). `EMAIL_FROM` looks like `Mizan <hello@yourdomain.com>`. |
 | `SIGNUPS` | Optional. Set to `closed` to stop new sign-ups. |
 | `APP_URL` | Optional. The public address used in links in emails, e.g. `https://mizan.example.com`. Defaults to the address the request came to. |

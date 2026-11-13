@@ -4,7 +4,9 @@ import fs from "node:fs";
 import path from "node:path";
 import pg from "pg";
 
-const url = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+// Neon's "-pooler" host is a transaction pooler: session state set by the app (SET ROLE) can leak into this
+// connection there. Migrations, like the app, use the direct host. Same rule as directUrl() in src/lib/db.ts.
+const url = (process.env.DATABASE_URL || process.env.POSTGRES_URL || "").replace(/(@[^/:?]*?)-pooler\./, "$1.");
 if (!url) {
   console.warn("[migrate] DATABASE_URL is not set; skipping migrations. The app will show a setup error until a database is attached.");
   process.exit(0);
@@ -14,6 +16,7 @@ const local = /@(localhost|127\.0\.0\.1)[:/]/.test(url) || process.env.DATABASE_
 const client = new pg.Client({ connectionString: url, ssl: local ? false : { rejectUnauthorized: true } });
 await client.connect();
 try {
+  await client.query("RESET ROLE");
   await client.query("SELECT pg_advisory_lock(727274)");
   await client.query(`CREATE TABLE IF NOT EXISTS public.mizan_migrations (
     name text PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now())`);
