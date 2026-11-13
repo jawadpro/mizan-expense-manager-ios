@@ -15,7 +15,7 @@ export default function PairLauncher({ server, shortcutName, shortcutUrl }: { se
   if (!code) {
     return <div className="alert error" role="alert">This pairing link is incomplete. In Mizan, open Settings › Connected devices and tap Connect iPhone to get a new code.</div>;
   }
-  const payload = `mizan-pair:${server}#${code}`;
+  const payload = `${server}/api/devices/pair?code=${code}`;
   const runUrl = `shortcuts://run-shortcut?name=${encodeURIComponent(shortcutName)}&input=text&text=${encodeURIComponent(payload)}`;
   return (
     <div className="auth-actions">

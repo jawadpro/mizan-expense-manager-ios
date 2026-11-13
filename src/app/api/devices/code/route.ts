@@ -17,8 +17,8 @@ export const POST = handle(async (req: Request) => {
   if (!parsed.success) throw new HttpError(400, "Invalid request");
   const { code, display, expiresAt } = await createPairingCode(user.id, parsed.data);
   const server = phoneUrl(req);
-  // What the Shortcut receives as input: where Mizan is and the one-time code. Never a device token.
-  const payload = `mizan-pair:${server}#${code}`;
+  // What the Shortcut receives as input: the link that pairs it, with the one-time code. Never a device token.
+  const payload = `${server}/api/devices/pair?code=${code}`;
   const runUrl = `shortcuts://run-shortcut?name=${encodeURIComponent(shortcutConfig().name)}&input=text&text=${encodeURIComponent(payload)}`;
   // Opened on the iPhone from the QR code: the code stays in the #fragment, which browsers never send to a server.
   const pairPageUrl = `${server}/pair#${code}`;

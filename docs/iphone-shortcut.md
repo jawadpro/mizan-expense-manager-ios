@@ -20,7 +20,19 @@ link in `MIZAN_SHORTCUT_URL`. After that, the setup guide shows a QR code and an
 The device token is created by Mizan during pairing and is only ever sent from the server to the Shortcut in the
 pairing response. It is never in a QR code, link, page, or the shared Shortcut. Mizan stores only its SHA-256 digest.
 
-## Build it (about 15 minutes, once)
+## Simplest build (pairing in 3 actions)
+
+The **Connect this iPhone** button runs the Shortcut with a link as its input:
+`<address>/api/devices/pair?code=XXXXXXXX`. Opening that link pairs the iPhone (once, within 10 minutes) and replies with
+JSON holding `endpoint` (where to send alerts) and `authorization` (the whole `Bearer …` header value).
+
+1. **If** *Shortcut Input* **contains** `/api/devices/pair`:
+   **URL** (*Shortcut Input*) › **Get Contents of URL** › **Save File** to `Mizan/device.json` (Ask Where to Save off,
+   Overwrite on) › **Show Notification** "Connected to Mizan" › **Stop This Shortcut**.
+2. To send an alert: **Get File** `Mizan/device.json` › **Get Dictionary from Input** › **Get Contents of URL** with URL =
+   *Dictionary Value* `endpoint`, header `Authorization` = *Dictionary Value* `authorization`.
+
+## Full build (about 15 minutes, once)
 
 In the Shortcuts app on an iPhone (iOS 17 or later), create a Shortcut named **Mizan** (or set `MIZAN_SHORTCUT_NAME`
 to the name you choose; the pairing button uses it). In the Shortcut's details, set **Receive** to *Text* and
