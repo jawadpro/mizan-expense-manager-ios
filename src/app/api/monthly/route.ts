@@ -1,4 +1,4 @@
-import { requireUser } from "@/lib/auth";
+import { requirePro } from "@/lib/plans";
 import { HttpError, handle, json, readJson } from "@/lib/http";
 import { createMonthlyItem, monthlyList } from "@/lib/monthly-repo";
 import { isMonth, monthOf } from "@/lib/monthly";
@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 /** GET ?month=YYYY-MM (default this month) returns that month's checklist. */
 export const GET = handle(async (req: Request) => {
-  await requireUser(req);
+  await requirePro(req, "monthly");
   const today = todayPkt();
   const m = searchParamsObject(req.url).month;
   if (m !== undefined && !isMonth(m)) throw new HttpError(400, "month must be YYYY-MM");
@@ -17,7 +17,7 @@ export const GET = handle(async (req: Request) => {
 });
 
 export const POST = handle(async (req: Request) => {
-  await requireUser(req);
+  await requirePro(req, "monthly");
   const parsed = monthlyItemInput.safeParse(await readJson(req, 2048));
   if (!parsed.success) throw new HttpError(400, "Please fix the highlighted fields", { fields: parsed.error.flatten().fieldErrors });
   return json({ ok: true, id: await createMonthlyItem(parsed.data) }, 201);

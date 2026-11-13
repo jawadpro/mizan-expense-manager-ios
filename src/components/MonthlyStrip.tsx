@@ -4,9 +4,15 @@ import { formatPaisa } from "@/lib/money";
 import { dueDate, monthLabel } from "@/lib/monthly";
 import { useData } from "./useData";
 import { shortDate, summarize, type MonthlyData } from "./MonthlyPayments";
+import { usePlan } from "./plan";
 
 /** One line on the dashboard: how this month's payments are going. Hidden until there is a list. */
 export default function MonthlyStrip() {
+  const { pro } = usePlan();
+  return pro ? <Strip /> : null;
+}
+
+function Strip() {
   const { data } = useData<MonthlyData>("/api/monthly");
   if (!data || data.items.length === 0) return null;
   const s = summarize(data);

@@ -83,3 +83,10 @@
 .pass-form .modal-foot { margin-top: 0; }
 .pass-show { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; }
 .pass-show input { width: auto; }
+
+/* Plans page */
+.plans-grid { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+.plan-list { margin: 10px 0; padding-left: 1.1em; display: grid; gap: 6px; }
+.plan-pro { border-color: var(--accent); }
+.plan-buttons { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.plan-buttons p { flex-basis: 100%; margin: 0; }

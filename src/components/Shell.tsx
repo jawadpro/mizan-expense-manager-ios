@@ -9,8 +9,10 @@ import "@/app/extra.css";
 import "@/app/badge.css";
 import { NEXT_THEME, THEME_LABEL, useTheme } from "./theme";
 import { DEFAULT_CURRENCY, setDisplayCurrency } from "@/lib/money";
+import { PlanProvider, ProBadge, type Plan } from "./plan";
 
 type Tab = { href: string; label: string; icon: React.ReactNode };
+type NavLink = Tab & { pro?: boolean };
 
 const svg = (d: React.ReactNode) => (
   <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>{d}</svg>
@@ -31,38 +33,49 @@ const ICONS = {
   out: svg(<><path d="M15 4h4v16h-4" /><path d="M10 8l-4 4 4 4M6 12h10" /></>),
   system: svg(<><rect x="3" y="4" width="18" height="12" rx="2" /><path d="M8 20h8M12 16v4" /></>),
   light: svg(<><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></>),
+  shield: svg(<><path d="M12 3l8 3v6c0 4.5-3.4 8.2-8 9-4.6-.8-8-4.5-8-9V6z" /><path d="M9 12l2 2 4-4" /></>),
   dark: svg(<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" />),
 };
 
-export default function Shell({ space, children, currency = DEFAULT_CURRENCY }: { space: Space; children: React.ReactNode; currency?: string }) {
+export default function Shell({ space, children, currency = DEFAULT_CURRENCY, plan = "free", admin = false }: { space: Space; children: React.ReactNode; currency?: string; plan?: Plan; admin?: boolean }) {
+  const pro = plan === "pro";
   // Set before any child renders, on the server and in the browser, so every amount uses the chosen currency.
   setDisplayCurrency(currency);
   const path = usePathname();
   const [moreOpen, setMoreOpen] = useState(false);
   const base = space === "demo" ? "/demo" : "/app";
-  const links = [
+  // Pro pages stay in the menu on Free, marked Pro; they open an upgrade card.
+  const links: NavLink[] = [
     { href: base, label: "Dashboard", icon: ICONS.home },
     { href: `${base}/transactions`, label: "Transactions", icon: ICONS.list },
     { href: `${base}/calendar`, label: "Calendar", icon: ICONS.calendar },
-    ...(space === "app" ? [{ href: `${base}/monthly`, label: "Monthly payments", icon: ICONS.check }] : []),
+    ...(space === "app" ? [{ href: `${base}/monthly`, label: "Monthly payments", icon: ICONS.check, pro: true }] : []),
     { href: `${base}/recipients`, label: "Recipients", icon: ICONS.people },
-    { href: `${base}/set-asides`, label: "Set-asides", icon: ICONS.jar },
-    { href: `${base}/zakat`, label: "Zakat", icon: ICONS.scale },
-    { href: `${base}/review`, label: "Review inbox", icon: ICONS.inbox },
+    { href: `${base}/set-asides`, label: "Set-asides", icon: ICONS.jar, pro: true },
+    { href: `${base}/zakat`, label: "Zakat", icon: ICONS.scale, pro: true },
+    { href: `${base}/review`, label: "Review inbox", icon: ICONS.inbox, pro: true },
   ];
-  const setupLinks = space === "app" ? [
-    { href: `${base}/sms`, label: "SMS setup", icon: ICONS.phone },
-    { href: `${base}/backup`, label: "Backups", icon: ICONS.cloud },
+  const setupLinks: NavLink[] = space === "app" ? [
+    { href: `${base}/sms`, label: "SMS setup", icon: ICONS.phone, pro: true },
+    { href: `${base}/backup`, label: "Backups", icon: ICONS.cloud, pro: true },
+    { href: `${base}/upgrade`, label: pro ? "Plan and billing" : "Upgrade to Pro", icon: ICONS.jar },
     { href: `${base}/settings`, label: "Settings", icon: ICONS.gear },
+    ...(admin ? [{ href: `${base}/admin`, label: "Admin", icon: ICONS.shield }] : []),
   ] : [];
+  const proMark = (l: NavLink) => (l.pro && !pro ? <ProBadge /> : null);
   const allLinks = [...links, ...setupLinks];
   const [theme, setTheme] = useTheme();
   // Phone navigation: the four most used pages as tabs, the rest behind "More".
-  const tabs: Tab[] = [
+  const tabs: Tab[] = pro ? [
     { href: base, label: "Home", icon: ICONS.home },
     { href: `${base}/transactions`, label: "Activity", icon: ICONS.list },
     { href: `${base}/set-asides`, label: "Set-asides", icon: ICONS.jar },
     { href: `${base}/zakat`, label: "Zakat", icon: ICONS.scale },
+  ] : [
+    { href: base, label: "Home", icon: ICONS.home },
+    { href: `${base}/transactions`, label: "Activity", icon: ICONS.list },
+    { href: `${base}/calendar`, label: "Calendar", icon: ICONS.calendar },
+    { href: `${base}/recipients`, label: "Recipients", icon: ICONS.people },
   ];
   const moreLinks = allLinks.filter((l) => !tabs.some((t) => t.href === l.href));
 
@@ -79,6 +92,8 @@ export default function Shell({ space, children, currency = DEFAULT_CURRENCY }: 
   // How many SMS alerts wait in the review inbox; refreshed on navigation, focus and after a review.
   const [pending, setPending] = useState(0);
   useEffect(() => {
+    // The review inbox is Pro; on Free there is nothing to count.
+    if (!pro) return;
     let live = true;
     const load = () =>
       apiFetch<{ items: unknown[] }>(resourceUrl(space, "review"))
@@ -93,7 +108,7 @@ export default function Shell({ space, children, currency = DEFAULT_CURRENCY }: 
       window.removeEventListener(REVIEW_CHANGED, load);
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [space, path]);
+  }, [space, path, pro]);
   // Mirror the count on the home-screen icon where the device supports it.
   useEffect(() => {
     if (space !== "app") return;
@@ -132,7 +147,7 @@ export default function Shell({ space, children, currency = DEFAULT_CURRENCY }: 
             <Link href={base} className="brand" aria-label="Mizan home">
               <span className="brand-mark" aria-hidden>م</span> <span className="brand-name">Mizan</span>
             </Link>
-            {space === "app" && <SpendingBell />}
+            {space === "app" && pro && <SpendingBell />}
           </div>
           <nav className="side-nav" aria-label="Main">
             {links.map((l) => (
@@ -140,6 +155,7 @@ export default function Shell({ space, children, currency = DEFAULT_CURRENCY }: 
                 {l.icon}
                 <span>{l.label}</span>
                 {badge(l.href)}
+                {proMark(l)}
               </Link>
             ))}
             {setupLinks.length > 0 && <div className="side-group">Setup</div>}
@@ -147,6 +163,7 @@ export default function Shell({ space, children, currency = DEFAULT_CURRENCY }: 
               <Link key={l.href} href={l.href} className={`side-link${path === l.href ? " active" : ""}`} aria-current={path === l.href ? "page" : undefined}>
                 {l.icon}
                 <span>{l.label}</span>
+                {proMark(l)}
               </Link>
             ))}
           </nav>
@@ -161,11 +178,11 @@ export default function Shell({ space, children, currency = DEFAULT_CURRENCY }: 
               <span className="brand-mark" aria-hidden>م</span> <span className="brand-name">Mizan</span>
             </Link>
             <span className="topbar-title" aria-hidden>{path === base ? "" : title}</span>
-            {space === "app" && <span className="topbar-bell"><SpendingBell /></span>}
+            {space === "app" && pro && <span className="topbar-bell"><SpendingBell /></span>}
             {themeButton("icon-btn", false)}
           </header>
           <main>
-            <div className="container">{children}</div>
+            <div className="container"><PlanProvider plan={plan}>{children}</PlanProvider></div>
           </main>
         </div>
       </div>
@@ -195,7 +212,7 @@ export default function Shell({ space, children, currency = DEFAULT_CURRENCY }: 
             <div className="sheet-grip" aria-hidden />
             {moreLinks.map((l) => (
               <Link key={l.href} href={l.href} className={`sheet-item${path === l.href ? " active" : ""}`}>
-                <span className="sheet-label">{l.label}{badge(l.href)}</span>
+                <span className="sheet-label">{l.label}{badge(l.href)}{proMark(l)}</span>
                 <span aria-hidden>›</span>
               </Link>
             ))}

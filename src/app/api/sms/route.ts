@@ -6,6 +6,7 @@ import { clientIp, rateLimit } from "@/lib/ratelimit";
 import { smsInput } from "@/lib/validation";
 import { ingestSms } from "@/lib/sms/ingest";
 import { findUserById, firstUserId, userBySmsToken } from "@/lib/users";
+import { isPro } from "@/lib/plans";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -40,6 +41,8 @@ export const POST = handle(async (req: Request) => {
     await rateLimit(`sms:fail:${ip}`, 10, 600);
     return errorJson(401, "Invalid or missing bearer token");
   }
+  // Free accounts add transactions by hand; nothing from the Shortcut is kept for them.
+  if (!isPro(user)) return errorJson(402, "Automatic SMS import is part of Mizan Pro. Upgrade in the app to turn it on.", { upgrade: true, feature: "sms" });
   if (!(await rateLimit(`sms:user:${user.id}`, 60, 60)) || !(await rateLimit("sms:global", 2000, 60))) return errorJson(429, "Too many requests");
 
   const body = await readJson(req, MAX_BODY_BYTES);

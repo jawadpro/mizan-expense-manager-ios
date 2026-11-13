@@ -239,6 +239,22 @@ async function withFundCheck<T>(fn: () => Promise<T>): Promise<T> {
 
 type Run = typeof q;
 
+/**
+ * A bank or set-aside named by the browser must be one of this account's. Foreign keys are checked without
+ * row-level security, so without this a hand-made request could point a row at another account's id.
+ */
+async function checkRefs(t: Pick<TransactionInput, "bankId" | "setAsideId" | "kind">) {
+  if (t.bankId) {
+    const r = await q(`SELECT 1 FROM app.banks WHERE id = $1`, [t.bankId]);
+    if (!r.rowCount) throw new HttpError(400, "That bank no longer exists", { fields: { bankId: ["Choose another bank"] } });
+  }
+  const fund = t.kind === "expense" ? t.setAsideId : null;
+  if (fund) {
+    const r = await q(`SELECT 1 FROM app.set_asides WHERE id = $1`, [fund]);
+    if (!r.rowCount) throw new HttpError(400, "That set-aside no longer exists", { fields: { setAsideId: ["Choose another set-aside"] } });
+  }
+}
+
 /** Records a transfer's bank charge or tax as its own expense ("Bank charges" or "Tax deducted"), dated with the transfer. */
 export async function addBankCharge(run: Run, parentId: string, chargesPaisa: number, t: Pick<TransactionInput, "occurredAt" | "counterparty">, accountHint: string | null, bankId: string | null, category = "Bank charges") {
   // The charge is paid to the transfer's bank; with no bank on the transfer, to the first bank in Settings.
@@ -253,6 +269,7 @@ export async function addBankCharge(run: Run, parentId: string, chargesPaisa: nu
 }
 
 export async function createTransaction(t: TransactionInput, source: "manual" | "sms" = "manual") {
+  await checkRefs(t);
   const { rows } = await withFundCheck(() =>
     q<TxRow>(
       `INSERT INTO app.transactions (kind, amount_paisa, occurred_at, category, counterparty, note, source, set_aside_id, bank_id)
@@ -284,6 +301,7 @@ async function setBankCharge(run: Run, parent: TxRow, paisa: number, t: Transact
 }
 
 export async function updateTransaction(id: string, t: TransactionInput, charges: ChargeEdits = {}) {
+  await checkRefs(t);
   return withFundCheck(() => tx(async (run) => {
     const { rows } = await run<TxRow>(
       `UPDATE app.transactions SET kind=$2, amount_paisa=$3, occurred_at=$4, category=$5, counterparty=$6, note=$7, set_aside_id=$8,
@@ -333,6 +351,7 @@ export async function listReview(space: Space) {
 
 /** Confirms a review item into a real transaction and discards the retained SMS excerpt. */
 export async function confirmReview(id: string, t: TransactionInput, chargesPaisa = 0, chargesCategory = "Bank charges") {
+  await checkRefs(t);
   return withFundCheck(() => tx(async (run) => {
     const item = await run<{ id: string; bank_ref: string | null; account_hint: string | null; sms_import_id: string | null; bank_id: string | null }>(
       `SELECT id, bank_ref, account_hint, sms_import_id, bank_id FROM app.review_items WHERE id=$1 AND status='pending' FOR UPDATE`,

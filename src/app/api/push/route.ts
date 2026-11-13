@@ -1,3 +1,4 @@
+import { requirePro } from "@/lib/plans";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth";
 import { HttpError, handle, json, readJson } from "@/lib/http";
@@ -12,12 +13,12 @@ const subscribeInput = z.object({
 });
 
 export const GET = handle(async (req: Request) => {
-  await requireUser(req);
+  await requirePro(req, "push");
   return json({ ok: true, publicKey: vapidPublicKey() });
 });
 
 export const POST = handle(async (req: Request) => {
-  await requireUser(req);
+  await requirePro(req, "push");
   const parsed = subscribeInput.safeParse(await readJson(req, 4096));
   if (!parsed.success) throw new HttpError(400, "This browser's notification details were not accepted");
   await saveSubscription(parsed.data);

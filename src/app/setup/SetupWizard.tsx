@@ -228,8 +228,9 @@ function FinishStep({ back }: { back: () => void }) {
   );
 }
 
-export default function SetupWizard({ db, hasOwner, endpoint }: { db: DbState; hasOwner: boolean; endpoint: string }) {
-  const [at, setAt] = useState(hasOwner ? 2 : 0);
+export default function SetupWizard({ db, hasOwner, endpoint, pro = true }: { db: DbState; hasOwner: boolean; endpoint: string; pro?: boolean }) {
+  // Free accounts add transactions by hand, so they skip the bank and iPhone (SMS) steps.
+  const [at, setAt] = useState(hasOwner ? (pro ? 2 : 3) : 0);
   useEffect(() => {
     window.scrollTo({ top: 0 });
   }, [at]);
@@ -242,9 +243,9 @@ export default function SetupWizard({ db, hasOwner, endpoint }: { db: DbState; h
         {at === 0 && <DatabaseStep db={db} next={go(1)} />}
         {at === 1 && <AccountStep next={go(2)} />}
         {at === 2 && <BanksStep next={go(3)} />}
-        {at === 3 && <NameStep back={go(2)} next={go(4)} />}
+        {at === 3 && <NameStep back={go(pro ? 2 : 3)} next={go(pro ? 4 : 5)} />}
         {at === 4 && <IphoneStep endpoint={endpoint} back={go(3)} next={go(5)} />}
-        {at === 5 && <FinishStep back={go(4)} />}
+        {at === 5 && <FinishStep back={go(pro ? 4 : 3)} />}
       </div>
     </div>
   );

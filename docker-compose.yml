@@ -31,6 +31,15 @@ services:
       SESSION_SECRET: local-demo-session-secret-change-me-0001
       SMS_INGEST_TOKEN: local-demo-sms-token-change-me-000000001
       CRON_SECRET: local-demo-cron-secret-change-me-00000001
+      # While Paddle isn't set up, the plans page offers "Simulate payment" to switch Pro on. Local demo only.
+      BILLING_TEST_MODE: "true"
+      # Paddle sandbox, for trying Pro checkout. Put the values in a .env file next to this one.
+      PADDLE_ENV: ${PADDLE_ENV:-sandbox}
+      PADDLE_CLIENT_TOKEN: ${PADDLE_CLIENT_TOKEN:-}
+      PADDLE_API_KEY: ${PADDLE_API_KEY:-}
+      PADDLE_WEBHOOK_SECRET: ${PADDLE_WEBHOOK_SECRET:-}
+      PADDLE_PRICE_MONTHLY: ${PADDLE_PRICE_MONTHLY:-}
+      PADDLE_PRICE_YEARLY: ${PADDLE_PRICE_YEARLY:-}
 
 volumes:
   mizan-db:

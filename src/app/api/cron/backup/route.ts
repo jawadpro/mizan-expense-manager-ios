@@ -7,7 +7,7 @@ import { DRIVE_TOKEN_NAME } from "@/lib/gdrive";
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
-/** Called once a night by Vercel Cron, which sends `Authorization: Bearer <CRON_SECRET>`. Backs up every account that connected Drive. */
+/** Called once a night by Vercel Cron, which sends `Authorization: Bearer <CRON_SECRET>`. Backs up every Pro account that connected Drive. */
 export const GET = handle(async (req: Request) => {
   const secret = process.env.CRON_SECRET;
   const auth = req.headers.get("authorization") ?? "";
@@ -15,7 +15,9 @@ export const GET = handle(async (req: Request) => {
   const owners = await asSystem(async () =>
     (await q<{ user_id: string }>(
       `SELECT DISTINCT s.user_id FROM app.app_secrets s JOIN app.users u ON u.id = s.user_id
-       WHERE s.name = $1 AND u.status = 'active'`,
+       WHERE s.name = $1 AND u.status = 'active'
+         AND ((u.comp_plan = 'pro' AND (u.comp_until IS NULL OR u.comp_until > now()))
+              OR EXISTS (SELECT 1 FROM app.subscriptions x WHERE x.user_id = u.id AND x.status IN ('trialing', 'active', 'past_due')))`,
       [DRIVE_TOKEN_NAME],
     )).rows.map((r) => r.user_id),
   );

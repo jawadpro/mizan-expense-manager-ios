@@ -17,15 +17,23 @@ export type User = {
   sessions_valid_after_ms: number | null;
   /** When the account finished the setup steps (banks, name, iPhone), or null. */
   onboarded_at: string | null;
+  /** "pro" from an active subscription or Pro given by an admin, otherwise "free". */
+  plan: "free" | "pro";
   created_at: string;
 };
 
 export const MIN_PASSWORD = 10;
 export const MAX_PASSWORD = 256;
 
+// Pro: given by an admin and not expired, or a subscription that is paid up (past_due keeps Pro while the
+// provider retries the payment).
+const PLAN_SQL = `CASE WHEN (users.comp_plan = 'pro' AND (users.comp_until IS NULL OR users.comp_until > now()))
+    OR EXISTS (SELECT 1 FROM app.subscriptions s WHERE s.user_id = users.id AND s.status IN ('trialing', 'active', 'past_due'))
+  THEN 'pro' ELSE 'free' END AS plan`;
+
 const COLS =
   "id, email, name, role, status, email_verified_at, onboarded_at, created_at, " +
-  "(extract(epoch from sessions_valid_after) * 1000)::float8 AS sessions_valid_after_ms";
+  "(extract(epoch from sessions_valid_after) * 1000)::float8 AS sessions_valid_after_ms, " + PLAN_SQL;
 
 /** Lower-cased and trimmed, or null when it isn't a plausible address. */
 export function normalizeEmail(raw: unknown): string | null {
@@ -74,8 +82,8 @@ export async function createFirstAdmin(input: { email: string; password: string;
     const { rows: [{ n }] } = await run(`SELECT count(*)::int AS n FROM app.users`);
     if (n > 0) return null;
     const { rows } = await run(
-      `INSERT INTO app.users (email, password_hash, name, role, email_verified_at)
-       VALUES ($1, $2, $3, 'admin', now()) RETURNING ${COLS}`,
+      `INSERT INTO app.users (email, password_hash, name, role, email_verified_at, comp_plan, comp_note)
+       VALUES ($1, $2, $3, 'admin', now(), 'pro', 'Admin') RETURNING ${COLS}`,
       [input.email, hashPassword(input.password), input.name?.trim() || null],
     );
     return (rows[0] as User) ?? null;

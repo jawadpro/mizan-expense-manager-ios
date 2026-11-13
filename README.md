@@ -204,6 +204,19 @@ Only `DATABASE_URL` is required. Its user must be allowed to create roles (Neon'
 | `SMS_AUTO_IMPORT` | Optional. Set to `false` to send every alert to the Review inbox. |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | Optional. Web push keys (created by setup if empty). |
 | `CRON_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Optional. Nightly Google Drive backups. |
+| `PADDLE_ENV` | `sandbox` (default) or `production`. |
+| `PADDLE_CLIENT_TOKEN`, `PADDLE_PRICE_MONTHLY`, `PADDLE_PRICE_YEARLY` | Pro checkout. Without all three the plans page shows that payments aren't set up. |
+| `PADDLE_WEBHOOK_SECRET` | The notification destination's secret. Paddle's webhooks are what turn Pro on and off. |
+| `PADDLE_API_KEY` | Opens Paddle's customer portal, where subscribers change plan, update their card or cancel. |
+| `BILLING_TEST_MODE` | `true` adds a "Simulate payment" button while Paddle isn't set up, so you can try Pro locally. Never set it on a public server: anyone signed in could give themselves Pro. The Docker demo sets it. |
+| `PRICE_MONTHLY_LABEL`, `PRICE_YEARLY_LABEL`, `TRIAL_DAYS` | What the plans page shows. Defaults `$4.99`, `$49`, `14`. The real prices and trial live on the Paddle prices. |
+
+**Plans and payments.** Every account starts on Free, which tracks money added by hand. Pro adds SMS import, more than one bank, the review inbox, monthly payments, spending limits, set-asides, Zakat, notifications and backups. Admins can also give Pro to an account. To take payments with [Paddle](https://www.paddle.com):
+
+1. In Paddle, create a product with a monthly and a yearly price (set the free trial on the prices), and copy the two `pri_...` ids.
+2. Under Developer tools, create a client-side token and an API key.
+3. Add a notification destination for `https://your-app/api/billing/webhook` with all `subscription.*` events, and copy its secret key.
+4. Set the variables above and redeploy. Try it in the sandbox first, then switch `PADDLE_ENV` to `production` with live ids.
 
 **Google Drive backups (optional).** Create an OAuth client in Google Cloud with the `drive.file` scope. Add `https://your-app.vercel.app/api/backup/google/callback` as a redirect URI, then set the three variables above and connect Drive from **Backups** in the app. Vercel Cron runs the backup nightly (see `vercel.json`).
 

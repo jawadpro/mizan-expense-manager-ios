@@ -15,6 +15,7 @@ import BankList from "./BankList";
 import MessageTester from "./MessageTester";
 import { LimitModal, type LimitEdit } from "./SpendingCheck";
 import { ChangePasswordModal } from "./ChangePassword";
+import { ProBadge, UpgradeCard, usePlan } from "./plan";
 
 const rs = (p: number) => formatPaisa(Math.round(p)).replace(/\.\d\d$/, "");
 const RANGES: { id: Prefs["defaultRange"]; label: string }[] = [
@@ -57,6 +58,7 @@ function Section({ id, title, children }: { id: string; title: string; children:
 export default function Settings() {
   const { data, error, loading, reload } = useData<{ prefs: Prefs }>("/api/preferences");
   const limits = useData<{ items: { category: string; limit: number }[] }>("/api/limits");
+  const { pro } = usePlan();
   const me = useData<{ user: { email: string; name: string | null; emailVerified: boolean } }>("/api/auth/me");
   const [resending, setResending] = useState(false);
   async function resendVerify() {
@@ -131,6 +133,7 @@ export default function Settings() {
           </Section>
 
           <Section id="spending" title="Spending check">
+            {!pro ? <UpgradeCard feature="spending" compact /> : <>
             <Row title="Warn me when a limit reaches" hint="You're always told again once a limit is passed." dim={!p.spendingCheck}>
               <div className="seg" role="group" aria-label="Warn at">
                 {([70, 80, 90] as const).map((n) => (
@@ -155,6 +158,7 @@ export default function Settings() {
                 </div>
               )}
             </div>
+            </>}
           </Section>
 
           <Section id="bank" title="Bank messages">
@@ -165,8 +169,10 @@ export default function Settings() {
                 onBlur={() => { if (ownNames !== null && ownNames !== p.ownNames) save({ ownNames }); setOwnNames(null); }}
                 onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()} />
             </Row>
-            <BankMessages onSaved={bump} />
-            <MessageTester ownNames={ownNames ?? p.ownNames} version={version} />
+            {pro ? <>
+              <BankMessages onSaved={bump} />
+              <MessageTester ownNames={ownNames ?? p.ownNames} version={version} />
+            </> : <UpgradeCard feature="sms" compact />}
           </Section>
 
           <Section id="appearance" title="Appearance">
@@ -185,7 +191,7 @@ export default function Settings() {
           </Section>
 
           <Section id="notifications" title="Notifications">
-            <div className="set-push"><PushToggle /></div>
+            {pro ? <div className="set-push"><PushToggle /></div> : <UpgradeCard feature="push" compact />}
           </Section>
 
           <Section id="security" title="Account">
@@ -200,8 +206,8 @@ export default function Settings() {
           </Section>
 
           <Section id="data" title="Data and setup">
-            <Link className="set-link" href="/app/sms"><span><span className="set-title">SMS setup</span><span className="set-hint">Forward bank alerts from your iPhone.</span></span><span aria-hidden>›</span></Link>
-            <Link className="set-link" href="/app/backup"><span><span className="set-title">Backups</span><span className="set-hint">Nightly copies to your Google Drive.</span></span><span aria-hidden>›</span></Link>
+            <Link className="set-link" href="/app/sms"><span><span className="set-title">SMS setup {!pro && <ProBadge />}</span><span className="set-hint">Forward bank alerts from your iPhone.</span></span><span aria-hidden>›</span></Link>
+            <Link className="set-link" href="/app/backup"><span><span className="set-title">Backups {!pro && <ProBadge />}</span><span className="set-hint">Nightly copies to your Google Drive.</span></span><span aria-hidden>›</span></Link>
             <a className="set-link" href="/api/transactions/export"><span><span className="set-title">Download all transactions</span><span className="set-hint">A CSV file you can open in Excel or Sheets.</span></span><span aria-hidden>↓</span></a>
           </Section>
         </div>

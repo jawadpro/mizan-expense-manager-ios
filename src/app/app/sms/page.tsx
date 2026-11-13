@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import ShortcutSteps from "@/components/ShortcutSteps";
 import SmsToken from "@/components/SmsToken";
+import { ProOnly } from "@/components/plan";
 import "../../setup.css";
 
 export const dynamic = "force-dynamic";
@@ -10,7 +11,7 @@ export default async function SmsSetupPage() {
   const host = h.get("x-forwarded-host") ?? h.get("host") ?? "your-app.vercel.app";
   const endpoint = `https://${host}/api/sms`;
   return (
-    <>
+    <ProOnly feature="sms" title="SMS setup">
       <div className="page-head">
         <div>
           <h1>SMS setup</h1>
@@ -36,6 +37,6 @@ export default async function SmsSetupPage() {
           <pre>{`POST ${endpoint}\nAuthorization: Bearer <SMS token>\nContent-Type: application/json\n\n` + JSON.stringify({ sender: "MYBANK", text: "PKR 2,450.00 debited from A/C ****1234 on 15-Oct-2026 14:22 at FOODPANDA. Avl Bal PKR 85,301.17", receivedAt: "2026-10-15T14:22:31+05:00" }, null, 2)}</pre>
         </details>
       </div>
-    </>
+    </ProOnly>
   );
 }

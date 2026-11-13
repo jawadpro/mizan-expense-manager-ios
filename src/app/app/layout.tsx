@@ -15,5 +15,5 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // A new account finishes the setup steps before the workspace opens.
   if (!user.onboarded_at) redirect("/setup");
   const currency = (await asUser(user.id, getPrefs).catch(() => null))?.currency ?? DEFAULT_CURRENCY;
-  return <Shell space="app" currency={currency}>{children}</Shell>;
+  return <Shell space="app" currency={currency} plan={user.plan} admin={user.role === "admin"}>{children}</Shell>;
 }

@@ -1,5 +1,5 @@
+import { requirePro } from "@/lib/plans";
 import crypto from "node:crypto";
-import { requireUser } from "@/lib/auth";
 import { handle } from "@/lib/http";
 import { authUrl } from "@/lib/gdrive";
 import { STATE_COOKIE, publicOrigin } from "@/lib/oauth-state";
@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 /** Sends the signed-in owner to Google's consent screen, with a one-time state value to stop forged callbacks. */
 export const GET = handle(async (req: Request) => {
-  await requireUser(req);
+  await requirePro(req, "backup");
   const origin = publicOrigin(req);
   const state = crypto.randomBytes(24).toString("base64url");
   const secure = origin.startsWith("https://") ? "; Secure" : "";

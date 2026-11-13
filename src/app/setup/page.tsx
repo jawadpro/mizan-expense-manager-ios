@@ -23,7 +23,7 @@ export default async function SetupPage() {
   const host = h.get("x-forwarded-host") ?? h.get("host") ?? "your-app.vercel.app";
   return (
     <ToastProvider>
-      <SetupWizard db={state.db} hasOwner={state.hasOwner} endpoint={`https://${host}/api/sms`} />
+      <SetupWizard db={state.db} hasOwner={state.hasOwner} pro={!user || user.plan === "pro"} endpoint={`https://${host}/api/sms`} />
     </ToastProvider>
   );
 }
