@@ -211,7 +211,7 @@ Only `DATABASE_URL` is required. Everything else is either created by the setup 
 ## Limitations
 
 - **iPhone only for SMS forwarding.** Automatic import uses iOS Shortcuts automations. On other phones you can still add transactions by hand or post to the `/api/sms` endpoint yourself.
-- **Built around South Asian bank alerts.** The built-in reader is tuned for Pakistani banks (MCB, UBL and others) and `PKR`/`Rs` amounts. You can teach it other banks from a pasted example, but expect a few alerts in the Review inbox at first.
+- **Built around South Asian bank alerts.** The built-in reader is tuned for Pakistani bank alerts and `PKR`/`Rs` amounts. You can teach it other banks from a pasted example, but expect a few alerts in the Review inbox at first.
 - **One currency.** The currency you choose changes how amounts are shown. Amounts are never converted between currencies.
 - **One user.** There's no sign-up and no shared accounts. If you forget the passphrase, set a new `ADMIN_PASSWORD_HASH` in Vercel.
 - **Free-tier hosting.** Neon suspends an idle database, so the first load after a pause takes a second or two longer.
