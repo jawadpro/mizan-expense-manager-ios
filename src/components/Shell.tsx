@@ -11,6 +11,8 @@ import { NEXT_THEME, THEME_LABEL, useTheme } from "./theme";
 import { DEFAULT_CURRENCY, setDisplayCurrency } from "@/lib/money";
 import BrandMark from "@/components/BrandMark";
 import PullToRefresh from "./PullToRefresh";
+import ConfirmPassphrase from "./ConfirmPassphrase";
+import "@/app/security.css";
 
 type Tab = { href: string; label: string; icon: React.ReactNode };
 
@@ -28,6 +30,7 @@ const ICONS = {
   phone: svg(<><rect x="6" y="2.5" width="12" height="19" rx="2.5" /><path d="M11 18.5h2" /></>),
   cloud: svg(<path d="M7 18a4.5 4.5 0 0 1-.6-9 6 6 0 0 1 11.4 1.5A3.8 3.8 0 0 1 17.5 18H7z" />),
   gear: svg(<><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" /></>),
+  sprout: svg(<><path d="M12 21v-9" /><path d="M12 12c0-4 3-7 8-7 0 5-3 7-8 7z" /><path d="M12 14c0-3.5-2.5-6-7-6 0 4.5 2.5 6 7 6z" /></>),
   check: svg(<><rect x="4" y="3.5" width="16" height="17" rx="2.5" /><path d="M8 9l1.5 1.5L12 8M8 15l1.5 1.5L12 14M14.5 9.5H17M14.5 15.5H17" /></>),
   split: svg(<><path d="M6 3h12v18l-2-1.4L14 21l-2-1.4L10 21l-2-1.4L6 21z" /><path d="M9 8h6M9 12h6M9 16h3" /></>),
   more: svg(<><circle cx="5" cy="12" r="1.3" /><circle cx="12" cy="12" r="1.3" /><circle cx="19" cy="12" r="1.3" /></>),
@@ -50,6 +53,7 @@ export default function Shell({ space, children, currency = DEFAULT_CURRENCY }: 
     ...(space === "app" ? [{ href: `${base}/monthly`, label: "Monthly payments", icon: ICONS.check }, { href: `${base}/splits`, label: "Bill splits", icon: ICONS.split }] : []),
     { href: `${base}/recipients`, label: "Recipients", icon: ICONS.people },
     { href: `${base}/set-asides`, label: "Set-asides", icon: ICONS.jar },
+    ...(space === "app" ? [{ href: `${base}/savings`, label: "Savings plan", icon: ICONS.sprout }] : []),
     { href: `${base}/zakat`, label: "Zakat", icon: ICONS.scale },
     { href: `${base}/review`, label: "Review inbox", icon: ICONS.inbox },
   ];
@@ -121,7 +125,7 @@ export default function Shell({ space, children, currency = DEFAULT_CURRENCY }: 
       window.location.href = "/login";
     }
   }
-  const title = allLinks.find((l) => l.href === path)?.label ?? "Mizan";
+  const title = allLinks.find((l) => l.href === path)?.label ?? (path === `${base}/bin` ? "Recycle bin" : "Mizan");
   const themeButton = (cls: string, withLabel: boolean) => (
     <button type="button" className={cls} onClick={() => setTheme(NEXT_THEME[theme])} aria-label={`Theme: ${THEME_LABEL[theme]}. Switch to ${THEME_LABEL[NEXT_THEME[theme]]}`} title={`Theme: ${THEME_LABEL[theme]}`}>
       {ICONS[theme]}
@@ -131,6 +135,7 @@ export default function Shell({ space, children, currency = DEFAULT_CURRENCY }: 
   return (
     <ToastProvider>
       <PullToRefresh />
+      {space === "app" && <ConfirmPassphrase />}
       <div className="layout">
         <aside className="sidebar">
           <div className="side-brand">
