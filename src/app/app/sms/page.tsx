@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import ShortcutSteps from "@/components/ShortcutSteps";
 import SmsToken from "@/components/SmsToken";
+import PhoneQr from "@/components/PhoneQr";
 import { ProOnly } from "@/components/plan";
 import "../../setup.css";
 
@@ -19,6 +20,10 @@ export default async function SmsSetupPage() {
         </div>
       </div>
       <div className="grid" style={{ gap: 16, maxWidth: 820 }}>
+        <div className="card">
+          <h2>Connect your iPhone</h2>
+          <PhoneQr />
+        </div>
         <div className="card">
           <h3>Your Mizan URL</h3>
           <pre>{endpoint}</pre>

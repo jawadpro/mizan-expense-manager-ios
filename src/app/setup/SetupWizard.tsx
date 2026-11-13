@@ -7,6 +7,7 @@ import BankMessages from "@/components/BankMessages";
 import MessageTester from "@/components/MessageTester";
 import PushToggle from "@/components/PushToggle";
 import ShortcutSteps from "@/components/ShortcutSteps";
+import PhoneQr from "@/components/PhoneQr";
 import SmsToken from "@/components/SmsToken";
 import { useToast } from "@/components/Toast";
 import { useData } from "@/components/useData";
@@ -175,7 +176,8 @@ function IphoneStep({ endpoint, back, next }: { endpoint: string; back: () => vo
   return (
     <>
       <h1>Forward alerts from your iPhone</h1>
-      <p className="muted">Two ready-made Shortcuts send each bank SMS to Mizan as it arrives. Open this page on your iPhone to add them. You can also do this later from SMS setup in the menu.</p>
+      <p className="muted">Two ready-made Shortcuts send each bank SMS to Mizan as it arrives. Scan the code with your iPhone to set them up there. You can also do this later from SMS setup in the menu.</p>
+      <div className="setup-panel"><PhoneQr /></div>
       <div className="setup-panel">
         <div className="setup-kv"><span>Token</span><SmsToken /></div>
       </div>

@@ -41,3 +41,19 @@
 .shortcut-card .shortcut-add { color: var(--accent-ink); font-weight: 600; margin-top: 4px; }
 .shortcut-url { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 6px 0 2px; }
 .shortcut-url code { word-break: break-all; }
+
+/* QR code that opens /connect on the iPhone */
+.phone-qr { display: flex; gap: 16px; align-items: center; padding-top: 12px; flex-wrap: wrap; }
+.phone-qr-code { width: 168px; height: 168px; flex: none; background: #fff; border-radius: var(--radius-sm); padding: 8px; display: grid; place-items: center; border: 1px solid var(--border); }
+.phone-qr-code svg { width: 100%; height: 100%; display: block; }
+.phone-qr-text { display: grid; gap: 4px; flex: 1 1 220px; }
+
+/* /connect, opened on the phone */
+.connect-wrap { max-width: 520px; }
+.connect-steps { padding-left: 20px; margin: 16px 0 12px; display: grid; gap: 18px; }
+.connect-steps li { display: grid; gap: 6px; }
+.connect-buttons { display: grid; gap: 8px; margin-top: 4px; }
+.connect-buttons .btn { justify-content: center; min-height: 44px; }
+.connect-copy { display: flex; align-items: center; justify-content: space-between; gap: 8px; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px 10px; }
+.connect-copy code { word-break: break-all; font-size: 0.82rem; }
+.connect-copy .btn { flex: none; min-height: 36px; }
