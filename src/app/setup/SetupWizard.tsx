@@ -7,7 +7,8 @@ import BankMessages from "@/components/BankMessages";
 import MessageTester from "@/components/MessageTester";
 import PushToggle from "@/components/PushToggle";
 import ShortcutSteps from "@/components/ShortcutSteps";
-import PhoneQr from "@/components/PhoneQr";
+import { InstallShortcut, PairIphone } from "@/components/IphoneSetup";
+import { useDevices } from "@/components/devices";
 import SmsToken from "@/components/SmsToken";
 import { useToast } from "@/components/Toast";
 import { useData } from "@/components/useData";
@@ -172,16 +173,29 @@ function NameStep({ back, next }: { back: () => void; next: () => void }) {
   );
 }
 
+function IphonePairing() {
+  const { data } = useDevices();
+  return (
+    <>
+      <div className="setup-panel"><h3 style={{ marginTop: 12 }}>1. Add the Mizan Shortcut</h3><InstallShortcut info={data} /></div>
+      <div className="setup-panel"><h3 style={{ marginTop: 12 }}>2. Pair this iPhone</h3><PairIphone onPaired={() => {}} /></div>
+    </>
+  );
+}
+
 function IphoneStep({ endpoint, back, next }: { endpoint: string; back: () => void; next: () => void }) {
   return (
     <>
       <h1>Forward alerts from your iPhone</h1>
-      <p className="muted">Two ready-made Shortcuts send each bank SMS to Mizan as it arrives. Scan the code with your iPhone to set them up there. You can also do this later from SMS setup in the menu.</p>
-      <div className="setup-panel"><PhoneQr /></div>
-      <div className="setup-panel">
-        <div className="setup-kv"><span>Token</span><SmsToken /></div>
-      </div>
-      <div className="setup-panel"><ShortcutSteps endpoint={endpoint} /></div>
+      <p className="muted">The Mizan Shortcut sends each bank SMS to Mizan as it arrives. Add it, then pair this account with a one-time code: there&apos;s no address or token to type. You can also do this later from SMS setup in the menu.</p>
+      <IphonePairing />
+      <details className="setup-more">
+        <summary>Using the older Expense Manager Shortcut instead</summary>
+        <div className="setup-panel">
+          <div className="setup-kv"><span>Token</span><SmsToken /></div>
+        </div>
+        <div className="setup-panel"><ShortcutSteps endpoint={endpoint} /></div>
+      </details>
       <div className="setup-actions">
         <button className="btn ghost" onClick={back}>Back</button>
         <button className="btn primary" onClick={next}>Continue</button>

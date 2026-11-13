@@ -61,7 +61,7 @@ export function isTrustedSender(sender: string, extra: string[] = []): boolean {
 const CUR = String.raw`(?:PKR|Rs\.?|Rupees)`;
 const NUM = String.raw`(\d{1,3}(?:,\d{3})+|\d{1,2}(?:,\d{2})*,\d{3}|\d+)(?:\.(\d{1,2}))?`;
 
-export const OTP_RE = /\b(otp|one[\s-]?time\s+(?:password|pin|code)|verification\s+code|do\s+not\s+share|never\s+share)\b/i;
+export const OTP_RE = /\b(otp|one[\s-]?time\s+(?:password|pin|code)|verification\s+code|do\s+not\s+share|never\s+share|pass\s?code|security\s+code|authenti(?:c|f)ication\s+code|log\s?in\s+code|activation\s+code|(?:your\s+)?code\s+(?:is|:)\s*\d{4,8})\b/i;
 const PROMO_RE = /\b(offer|discount|cashback\s+offer|win|lucky\s+draw|apply\s+now|click\s+here|t&cs?\s+apply)\b/i;
 // Available/ledger balance clauses. Removed before looking for the transaction amount.
 export const BALANCE_RE = new RegExp(
