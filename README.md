@@ -139,7 +139,7 @@ Open **Connect iPhone** in the app's menu. The dot beside it is red until an iPh
 
 Your next bank alert appears in Mizan within a few seconds.
 
-No internet when an alert arrives? The Shortcut keeps it. Back online, open the **Review inbox** on your iPhone and tap
+No internet when an alert arrives? The Shortcut keeps it. Back online, open Mizan on your iPhone, tap **More**, then
 **Import queued messages**. See [`docs/iphone-pairing.md`](docs/iphone-pairing.md) for how pairing works.
 
 **Using a bank Mizan doesn't know yet?** Go to **Settings → Bank messages** and paste one example alert. Mizan learns that bank's format from it, and **Test a message** shows exactly what it reads.
