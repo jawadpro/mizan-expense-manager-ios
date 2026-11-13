@@ -11,7 +11,8 @@ import { useData } from "./useData";
 import { Empty, ErrorBox, Loading } from "./States";
 import TxForm, { draftFrom, type TxDraft } from "./TxForm";
 import DateRangePicker from "./DateRangePicker";
-import { useBanks } from "./useBanks";
+import { bankLabel, useBanks } from "./useBanks";
+import { setSelectedBank, useSelectedBank } from "./useSelectedBank";
 import { useChargesEdit } from "./ChargesField";
 import { useToast } from "./Toast";
 import type { Tx } from "./types";
@@ -94,7 +95,16 @@ export default function Transactions({ space, fixedCounterparty }: { space: Spac
   const [kind, setKind] = useState(sp.get("kind") ?? "");
   const [category, setCategory] = useState(sp.get("category") ?? "");
   const [source, setSource] = useState(sp.get("source") ?? "");
-  const [bank, setBank] = useState(sp.get("bank") ?? "");
+  // The bank filter is shared with Overview (except in a recipient's panel), and a ?bank= link sets it.
+  const [sharedBank, setSharedBank] = useSelectedBank(space);
+  const [ownBank, setOwnBank] = useState(sp.get("bank") ?? "");
+  const shareBank = !fixedCounterparty && space === "app";
+  const bank = shareBank ? sharedBank : ownBank;
+  const setBank = shareBank ? setSharedBank : setOwnBank;
+  const linkedBank = sp.get("bank");
+  useEffect(() => {
+    if (shareBank && linkedBank) setSelectedBank(linkedBank);
+  }, [shareBank, linkedBank]);
   const { banks, multi, nameOf } = useBanks(space);
   const [from, setFrom] = useState(sp.get("from") ?? "");
   const [to, setTo] = useState(sp.get("to") ?? "");
@@ -124,14 +134,14 @@ export default function Transactions({ space, fixedCounterparty }: { space: Spac
   async function destroy(id: string) {
     await apiFetch(`/api/transactions/${id}`, { method: "DELETE" });
     setEditing(null);
-    toast("Transaction deleted", "ok");
+    toast("Moved to the recycle bin", "ok");
     reload();
   }
   async function remove(t: Tx) {
-    if (!window.confirm(`Delete ${formatPaisa(t.amount_paisa)} ${t.counterparty ? `to ${t.counterparty}` : ""}? This can't be undone.`)) return;
+    if (!window.confirm(`Delete ${formatPaisa(t.amount_paisa)} ${t.counterparty ? `to ${t.counterparty}` : ""}? It goes to the recycle bin, where you can restore it for 30 days.`)) return;
     try {
       await apiFetch(`/api/transactions/${t.id}`, { method: "DELETE" });
-      toast("Transaction deleted", "ok");
+      toast("Moved to the recycle bin", "ok");
       reload();
     } catch (e) {
       toast((e as Error).message, "error");
@@ -183,8 +193,8 @@ export default function Transactions({ space, fixedCounterparty }: { space: Spac
             {multi && (
               <select aria-label="Bank" value={bank} onChange={(e) => setBank(e.target.value)}>
                 <option value="">All banks</option>
-                {banks.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-                <option value="none">No bank</option>
+                {banks.map((b) => <option key={b.id} value={b.id}>{bankLabel(b)}</option>)}
+                <option value="none">No bank (cash)</option>
               </select>
             )}
             <DateRangePicker from={from} to={to} onChange={(f, t) => { setFrom(f); setTo(t); }} />
