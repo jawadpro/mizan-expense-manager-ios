@@ -66,7 +66,7 @@ Most expense apps want your bank login or ask you to log every purchase yourself
 <p align="center">
   <img src="docs/screenshots/iphone-calendar.png" width="200" alt="Calendar" />
   <img src="docs/screenshots/iphone-monthly.png" width="200" alt="Monthly payments" />
-  <img src="docs/screenshots/iphone-sms-setup.png" width="200" alt="SMS setup" />
+  <img src="docs/screenshots/iphone-sms-setup.png" width="200" alt="Connect iPhone" />
   <img src="docs/screenshots/iphone-settings.png" width="200" alt="Settings" />
 </p>
 
@@ -121,22 +121,26 @@ This takes about 10 minutes, and **only one setting is required**. The app walks
    2. **Passphrase:** the one passphrase you'll sign in with.
    3. **Banks:** the banks you get alerts from and their SMS sender names.
    4. **Currency, your name, and a test:** pick your currency, enter your name as banks print it (so transfers between your own accounts aren't counted as spending), and paste a real alert to check that Mizan reads it correctly.
-   5. **iPhone:** your SMS token and the ready-made Shortcuts (see below).
+   5. **iPhone:** scan a QR code to connect your iPhone (see below).
    6. **Finish.**
 5. **Install it on your iPhone.** Open your app in **Safari**, tap **Share**, then **Add to Home Screen**. Open Mizan from the Home Screen icon to use it full screen and get notifications.
 
 ## Setup: connect your iPhone
 
-You'll find these steps, with your own URL and token filled in, under **SMS setup** in the app's menu.
+Open **Connect iPhone** in the app's menu. The dot beside it is red until an iPhone is connected, then green.
 
-1. On your iPhone, open **SMS setup** in Mizan and tap **Add Shortcut** for both ready-made Shortcuts:
-   - **Expense Manager** sends each alert to Mizan, or queues it if you're offline.
-   - **Import Queued Messages** sends any queued alerts when you're back online.
-2. When asked, enter your Mizan **URL** and **SMS token**. Both are shown on the SMS setup page, with copy buttons.
-3. In iPhone **Settings → Apps → Shortcuts → Advanced**, turn on **Allow Deleting Without Confirmation**, so the queue can be cleared.
-4. Run each Shortcut once by hand. When iOS asks for permission, choose **Always Allow**.
-5. Create the automation: in **Shortcuts → Automation**, tap **+ → Message**, set **Sender** to your bank's name or short code, choose **Run Immediately**, and pick **Expense Manager**. Repeat for each bank.
-6. Wait for your next bank alert. It should appear in Mizan within a few seconds.
+1. On your computer, Mizan shows a QR code. Point your iPhone's **Camera** at it and tap the link. (Already using
+   Mizan on the iPhone? The same two buttons are right on the page.)
+2. First time only: tap **Get the Shortcut**, then **Add Shortcut**.
+3. Tap **Connect this iPhone** and allow it. The Shortcut saves your Mizan's address and a key for that iPhone by
+   itself: nothing to copy or type. Mizan shows the iPhone as connected once the phone confirms it saved the key.
+4. Create the automation: in **Shortcuts → Automation**, tap **+ → Message**, set **Sender** to your bank's name or
+   short code, choose **Run Immediately**, and pick the **Mizan** Shortcut. Repeat for each bank.
+
+Your next bank alert appears in Mizan within a few seconds.
+
+No internet when an alert arrives? The Shortcut keeps it. Back online, open the **Review inbox** on your iPhone and tap
+**Import queued messages**. See [`docs/iphone-pairing.md`](docs/iphone-pairing.md) for how pairing works.
 
 **Using a bank Mizan doesn't know yet?** Go to **Settings → Bank messages** and paste one example alert. Mizan learns that bank's format from it, and **Test a message** shows exactly what it reads.
 
