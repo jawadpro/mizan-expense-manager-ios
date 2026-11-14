@@ -93,6 +93,7 @@ Checks your savings against the gold or silver nisab using live metal prices, an
 | **Transactions and calendar** | Search, filter, edit, add cash spending by hand, export to CSV, or see every payment on a day, week or month calendar. |
 | **Recipients** | Everyone you pay or receive from, with totals and full history. |
 | **Monthly payments** | A checklist for rent, bills and fees that starts fresh each month and suggests the matching payment so you can tick it off in one tap. |
+| **Home Screen widget** | This month's payments on your iPhone's Home Screen or Lock Screen. Tap one to mark it paid and link the transaction Mizan suggests. Runs in the free Scriptable app; see [`docs/widget.md`](docs/widget.md). |
 | **Bill splits** | Paid for everyone? Split a payment between people, share each person a receipt image from your phone, and tick their share off when their money comes in. Mizan spots the repayment for you. |
 | **Savings plan and spending check** | See how much you can realistically save each month, set limits per category, and get a gentle nudge when spending runs ahead of usual. |
 | **Set-asides** | Rules such as "10% of every remittance for charity". Mizan tracks what has built up and what you've paid out. |
@@ -173,6 +174,8 @@ Your next bank alert appears in Mizan within a few seconds.
 No internet when an alert arrives? The Shortcut keeps it. Back online, open Mizan on your iPhone, tap **More**, then
 **Import queued messages**. See [`docs/iphone-pairing.md`](docs/iphone-pairing.md) for how pairing works.
 
+**Want your monthly payments on the Home Screen?** Open **Monthly payments → Home Screen widget** and follow the steps. See [`docs/widget.md`](docs/widget.md).
+
 **Using a bank Mizan doesn't know yet?** Go to **Settings → Bank messages** and paste one example alert. Mizan learns that bank's format from it, and **Test a message** shows exactly what it reads.
 
 <details>
@@ -198,6 +201,7 @@ Open <http://localhost:3000> and the setup wizard takes you through the same ste
 - **Hardened sessions.** Cookies are signed, HttpOnly, Secure and SameSite. Every write needs a CSRF token and a same-origin request. Sign-in and SMS endpoints are rate limited.
 - **SMS is data, never instructions.** Only alerts from senders you trust are accepted, and OTPs and promotional messages are ignored. Only a redacted copy of an unclear alert is kept, and it is deleted once you resolve it.
 - **A key per iPhone.** Each paired iPhone gets its own key, stored only as a hash. Remove an iPhone and its key stops working at once.
+- **Widgets can only see payments.** A Home Screen widget gets its own key, which can read and mark monthly payments and nothing else.
 - **No duplicates.** Re-sent alerts are detected by a fingerprint and the bank's reference number.
 - **Your data stays with you.** It lives in your own database, and Mizan has no analytics or third-party trackers.
 
