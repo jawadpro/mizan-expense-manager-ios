@@ -158,13 +158,13 @@ export class WhatsAppSendError extends Error {
   }
 }
 
-async function graphPost(s: WhatsAppSettings, body: unknown) {
+async function graphCall(s: WhatsAppSettings, path: "messages" | "media", body: BodyInit, json: boolean): Promise<unknown> {
   if (!s.phoneNumberId || !s.accessToken) throw new WhatsAppSendError(0, "WhatsApp isn't set up yet");
-  const res = await fetch(`${GRAPH()}/${encodeURIComponent(s.phoneNumberId)}/messages`, {
+  const res = await fetch(`${GRAPH()}/${encodeURIComponent(s.phoneNumberId)}/${path}`, {
     method: "POST",
-    headers: { authorization: `Bearer ${s.accessToken}`, "content-type": "application/json" },
-    body: JSON.stringify(body),
-    signal: AbortSignal.timeout(15_000),
+    headers: { authorization: `Bearer ${s.accessToken}`, ...(json ? { "content-type": "application/json" } : {}) },
+    body,
+    signal: AbortSignal.timeout(path === "media" ? 30_000 : 15_000),
   });
   if (!res.ok) {
     let msg = `WhatsApp answered ${res.status}`;
@@ -176,6 +176,24 @@ async function graphPost(s: WhatsAppSettings, body: unknown) {
     }
     throw new WhatsAppSendError(res.status, msg);
   }
+  return res.json().catch(() => null);
+}
+
+const graphPost = (s: WhatsAppSettings, body: unknown) => graphCall(s, "messages", JSON.stringify(body), true);
+
+/** Uploads a PNG to WhatsApp and returns its media id, which a message can then point at. */
+export async function uploadImage(s: WhatsAppSettings, png: Buffer, filename: string): Promise<string> {
+  const form = new FormData();
+  form.append("messaging_product", "whatsapp");
+  form.append("type", "image/png");
+  form.append("file", new Blob([new Uint8Array(png)], { type: "image/png" }), filename);
+  const r = (await graphCall(s, "media", form, false)) as { id?: string } | null;
+  if (!r?.id) throw new WhatsAppSendError(0, "WhatsApp didn't return a media id");
+  return r.id;
+}
+
+export async function sendImage(s: WhatsAppSettings, to: string, mediaId: string, caption: string) {
+  await graphPost(s, { messaging_product: "whatsapp", recipient_type: "individual", to, type: "image", image: { id: mediaId, caption: caption.slice(0, 1024) } });
 }
 
 export async function sendText(s: WhatsAppSettings, to: string, text: string) {

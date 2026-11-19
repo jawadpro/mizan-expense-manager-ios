@@ -24,9 +24,10 @@ Everything is set up in **Settings › WhatsApp**. Nothing goes in environment v
 Without a key, the bot answers these (send **help** to see them):
 
 - **Spending:** `summary`, `spending last month`, `food this month`, `petrol in october`, `last 5 payments`, `find daraz`
-- **How you're doing:** `how am I doing`, `balance`
+- **How you're doing:** `how am I doing`, `balance`, `net flow this month`, `remittance this month`, `salary last month`
 - **Splits:** `split 3000 dinner with Ali and Sara`, `split 5000 with Ali (not me)`, `who owes me`, `what does Ali owe`, `Ali paid`
 - **Add:** `spent 500 on lunch`
+- **Invoices:** `invoice for the last payment`, `invoice kolachi`, `invoices for the last 3 payments`, `invoices this month`
 
 If the AI can't be reached, the bot falls back to command mode, so it keeps answering.
 
@@ -36,6 +37,10 @@ when you reply YES (or ok, haan, 👍). Anything else cancels it. A waiting chan
 **Splits by name.** "Ali" is matched to someone you've split with before ("Ali Raza"). When the name fits two people,
 the bot asks which. Mizan looks for the bank payment of that amount from the last week and splits it. If there
 isn't one, it adds the payment (and says so before you confirm).
+
+**Invoices as pictures.** Ask for one invoice or several (up to 10 at a time) and each comes back as an image, the
+same one the app's Share button makes, with a one-line caption. Bank charges and tax deducted on a transfer are shown
+in their own box and never added to the amount, and they never get an invoice of their own.
 
 ## Set it up
 

@@ -9,11 +9,14 @@ export type Intent =
   | { tool: "how_am_i_doing" }
   | { tool: "balances" }
   | { tool: "spending_summary"; from: string; to: string; label: string; category?: string; query?: string }
+  | { tool: "cash_flow"; from: string; to: string; label: string }
+  | { tool: "money_in"; from: string; to: string; label: string; kind?: "income" | "remittance" }
   | { tool: "find_transactions"; query?: string; from?: string; to?: string; limit: number }
   | { tool: "list_splits"; person?: string }
   | { tool: "create_split"; total: number; people: string[]; include_me: boolean; description: string }
   | { tool: "settle_split"; person: string; note?: string }
   | { tool: "add_expense"; amount: number; description: string; category: string }
+  | { tool: "invoices"; limit: number; query?: string; from?: string; to?: string }
   | { tool: "unknown" };
 
 const MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
@@ -141,8 +144,25 @@ export function parseCommand(raw: string, today: string): Intent {
   }
   if (/^(my\s+)?(bank\s+)?balances?(\s+please)?$|\bhow much (money )?(do i have|is left|left)\b/.test(t)) return { tool: "balances" };
 
+  // invoice for the last payment | invoice kolachi | invoices this month | invoices for the last 3 payments
+  let m: RegExpExecArray | null = /^(?:(?:please\s+)?(?:send|make|generate|create|share|give)\s+(?:me\s+)?)?(?:an?\s+|the\s+|my\s+)?(invoices?|receipts?|rasee?d)\b\s*(.*)$/.exec(t);
+  if (m) {
+    let rest = m[2];
+    const n = /\b(?:last|latest|recent)\s+(\d{1,2})\b(?!\s*(?:days?|weeks?|months?))/.exec(rest);
+    const all = /\b(all|every)\b/.test(rest);
+    if (n) rest = rest.replace(n[0], " ");
+    const { range, rest: left } = findRange(rest, today);
+    const query = left
+      .replace(/\b(for|of|to|from|at|on|with|the|my|me|a|an|all|every|last|latest|recent|payments?|transactions?|expenses?|ones?|please|plz|send|it|them)\b/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    const plural = /s$/.test(m[1]) || all;
+    const limit = Math.min(10, n ? Number(n[1]) : plural ? 10 : 1);
+    return { tool: "invoices", limit: Math.max(1, limit), query: query.slice(0, 60) || undefined, from: range?.from, to: range?.to };
+  }
+
   // split 3000 dinner with ali and sara  |  split 3k with ali, sara for dinner  |  split 3000 with ali (not me)
-  let m = new RegExp(String.raw`^split\s+${AMOUNT}\s+(?:(?:for|on)\s+)?(.*?)\s*\bwith\b\s+(.+)$`, "i").exec(text);
+  m = new RegExp(String.raw`^split\s+${AMOUNT}\s+(?:(?:for|on)\s+)?(.*?)\s*\bwith\b\s+(.+)$`, "i").exec(text);
   if (m) {
     const total = parseAmount(m[1]);
     let names = m[3];
@@ -185,6 +205,16 @@ export function parseCommand(raw: string, today: string): Intent {
     return { tool: "find_transactions", query: rest || undefined, from: range?.from, to: range?.to, limit: 10 };
   }
 
+  // net flow this month | cash flow last month | how much did I save in october
+  const thisMonth = { from: `${today.slice(0, 8)}01`, to: today, label: "this month" };
+  if (/\b(net ?flow|cash ?flow|net|in and out|how much (did i|have i) (save|saved)|savings? rate|bachat)\b/.test(t)) {
+    return { tool: "cash_flow", ...(findRange(t, today).range ?? thisMonth) };
+  }
+  // remittance this month | how much remittance came in | salary last month | income in october
+  if (/\b(remittances?|remitted|bhej[ae]? gaye)\b/.test(t)) return { tool: "money_in", kind: "remittance", ...(findRange(t, today).range ?? thisMonth) };
+  if (/\b(income|salary|earnings?|earned|aamdani|tankhwah)\b/.test(t)) return { tool: "money_in", kind: "income", ...(findRange(t, today).range ?? thisMonth) };
+  if (/\b(money in|came in|received|got paid)\b/.test(t)) return { tool: "money_in", ...(findRange(t, today).range ?? thisMonth) };
+
   // spending this month | food this month | how much did i spend on petrol last month | daraz in october | summary
   const { range, rest } = findRange(t, today);
   let subject = rest
@@ -210,6 +240,7 @@ export const HELP_TEXT = [
   "",
   "📈 *How you're doing*",
   "• how am I doing · balance",
+  "• net flow this month · remittance this month · salary last month",
   "",
   "🤝 *Splits*",
   "• split 3000 dinner with Ali and Sara",
@@ -218,4 +249,8 @@ export const HELP_TEXT = [
   "",
   "➕ *Add*",
   "• spent 500 on lunch",
+  "",
+  "🧾 *Invoices*",
+  "• invoice for the last payment · invoice kolachi",
+  "• invoices this month · invoices for the last 3 payments",
 ].join("\n");

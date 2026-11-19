@@ -177,6 +177,20 @@ describe("command mode", () => {
     expect(p("last 5 payments")).toEqual({ tool: "find_transactions", limit: 5 });
     expect(p("find careem")).toEqual({ tool: "find_transactions", query: "careem", from: undefined, to: undefined, limit: 10 });
   });
+  it("reads net flow, remittance and salary questions", () => {
+    expect(p("whats the netflow for this month")).toEqual({ tool: "cash_flow", from: "2026-11-01", to: TODAY, label: "this month" });
+    expect(p("cash flow last month")).toEqual({ tool: "cash_flow", from: "2026-10-01", to: "2026-10-31", label: "last month" });
+    expect(p("how much my remittance for this month")).toEqual({ tool: "money_in", kind: "remittance", from: "2026-11-01", to: TODAY, label: "this month" });
+    expect(p("salary in october")).toMatchObject({ tool: "money_in", kind: "income", from: "2026-10-01", to: "2026-10-31" });
+  });
+  it("reads invoice requests, one or several", () => {
+    expect(p("invoice for the last payment")).toEqual({ tool: "invoices", limit: 1, query: undefined, from: undefined, to: undefined });
+    expect(p("send me an invoice for kolachi")).toEqual({ tool: "invoices", limit: 1, query: "kolachi", from: undefined, to: undefined });
+    expect(p("invoices for the last 3 payments")).toEqual({ tool: "invoices", limit: 3, query: undefined, from: undefined, to: undefined });
+    expect(p("invoices this month")).toEqual({ tool: "invoices", limit: 10, query: undefined, from: "2026-11-01", to: TODAY });
+    expect(p("Generate invoices for daraz last month")).toEqual({ tool: "invoices", limit: 10, query: "daraz", from: "2026-10-01", to: "2026-10-31" });
+    expect(p("invoices last 30 days")).toMatchObject({ tool: "invoices", limit: 10, from: "2026-10-18" });
+  });
   it("says unknown for anything else", () => {
     expect(p("what's the weather")).toEqual({ tool: "unknown" });
   });

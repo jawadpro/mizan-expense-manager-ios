@@ -3,7 +3,8 @@ import { q } from "./db";
 import { CATEGORIES, OWN_ACCOUNTS } from "./categories";
 import { buildInsights } from "./insights";
 import { formatPaisa } from "./money";
-import { analytics, createTransaction, distinctCategories, getBalances, getPrefs, listBanks, listSetAsides, listTransactions, spendingCheckData } from "./repo";
+import { analytics, createTransaction, distinctCategories, getBalances, getPrefs, invoiceTransactions, listBanks, listSetAsides, listTransactions, spendingCheckData } from "./repo";
+import { canShareInvoice, invoiceRef, invoiceTitle, type InvoiceTx } from "./invoice-data";
 import { addShares, listSplits, settleShare, splitPeople } from "./splits-repo";
 import { equalShares } from "./splits";
 import { addDays, formatDatePkt, isIsoDate, pktLocalToDate, todayPkt } from "./time";
@@ -23,7 +24,8 @@ export type Proposal =
   | { type: "expense"; amount: number; category: string; counterparty: string | null; note: string | null; occurredAt: string }
   | { type: "settle"; shareIds: string[]; note: string | null };
 
-export type ToolOutput = { text: string; proposal?: { action: Proposal; summary: string } };
+/** invoices: transactions whose invoice pictures are sent after the reply. */
+export type ToolOutput = { text: string; proposal?: { action: Proposal; summary: string }; invoices?: InvoiceTx[] };
 
 async function categoriesInUse(): Promise<string[]> {
   const used = await distinctCategories("app");
@@ -68,7 +70,8 @@ export async function spendingSummary(i: { from?: string; to?: string; label?: s
   const a = await analytics("app", from, to, "month");
   const ex = a.totals.expense.total;
   const inc = a.totals.income.total + a.totals.remittance.total;
-  const lines = [`*Spending ${label}*`, `Spent: *${rs(ex)}* (${a.totals.expense.n} payments)`, `Came in: ${rs(inc)}`, `Net: ${rs(a.net)}`];
+  const lines = [`*Spending ${label}*`, `Spent: *${rs(ex)}* (${a.totals.expense.n} payments)`, `Income: ${rs(a.totals.income.total)}${a.totals.remittance.total ? ` · Remittances: ${rs(a.totals.remittance.total)}` : ""}`, `Net flow: ${rs(a.net)}`];
+  void inc;
   const pex = a.previous.totals.expense.total;
   if (pex > 0) {
     const d = Math.round(((ex - pex) / pex) * 100);
@@ -83,6 +86,62 @@ export async function spendingSummary(i: { from?: string; to?: string; label?: s
     for (const r of a.topRecipients.slice(0, 4)) lines.push(`• ${r.counterparty}: ${rs(r.total)}`);
   }
   if (a.pendingReview) lines.push("", `${a.pendingReview} bank message${a.pendingReview === 1 ? "" : "s"} still waiting in Review, not counted yet.`);
+  return { text: lines.join("\n") };
+}
+
+const signed = (p: number) => `${p > 0 ? "+" : p < 0 ? "−" : ""}${rs(Math.abs(p))}`;
+
+/** Money in and out for a period, and what was left: income + remittances − spending (transfers between own accounts left out). */
+export async function cashFlow(i: { from?: string; to?: string; label?: string }): Promise<ToolOutput> {
+  const { from, to } = rangeOk(i.from, i.to);
+  const label = i.label ?? (from === to ? day(from) : `${day(from)} to ${day(to)}`);
+  const a = await analytics("app", from, to, "month");
+  const income = a.totals.income.total;
+  const rem = a.totals.remittance.total;
+  const ex = a.totals.expense.total;
+  const lines = [`*Net flow ${label}: ${signed(a.net)}*`, `Income: ${rs(income)}`, `Remittances: ${rs(rem)}`, `Spent: ${rs(ex)}`];
+  const inn = income + rem;
+  if (inn > 0) lines.push(a.net >= 0 ? `You kept ${Math.round((a.net / inn) * 100)}% of what came in.` : `You spent ${rs(-a.net)} more than came in.`);
+  const p = a.previous;
+  if (p.totals.income.total + p.totals.remittance.total + p.totals.expense.total > 0) lines.push(`Same length before: ${signed(p.net)}`);
+  if (a.pendingReview) lines.push(`${a.pendingReview} bank message${a.pendingReview === 1 ? "" : "s"} still waiting in Review, not counted yet.`);
+  return { text: lines.join("\n") };
+}
+
+/** Money that came in for a period: income, remittances or both, with where it came from. */
+export async function moneyIn(i: { from?: string; to?: string; label?: string; kind?: "income" | "remittance" }): Promise<ToolOutput> {
+  const { from, to } = rangeOk(i.from, i.to);
+  const label = i.label ?? (from === to ? day(from) : `${day(from)} to ${day(to)}`);
+  const kinds = i.kind ? [i.kind] : (["income", "remittance"] as const);
+  const what = i.kind === "remittance" ? "Remittances" : i.kind === "income" ? "Income" : "Money in";
+  const days = Math.round((Date.parse(to) - Date.parse(from)) / 86400e3) + 1;
+  const [now, prev, top] = await Promise.all([
+    Promise.all(kinds.map((kind) => listTransactions("app", { kind, from, to, page: 1, pageSize: 5 }))),
+    Promise.all(kinds.map((kind) => listTransactions("app", { kind, from: addDays(from, -days), to: addDays(from, -1), page: 1, pageSize: 1 }))),
+    q<{ who: string; total: number; n: number }>(
+      `SELECT coalesce(min(counterparty), 'Unknown') AS who, sum(amount_paisa)::float8 AS total, count(*)::int AS n FROM app.transactions
+       WHERE kind = ANY($3::text[]) AND category <> $4
+         AND occurred_at >= ($1::date::timestamp AT TIME ZONE 'Asia/Karachi') AND occurred_at < (($2::date + 1)::timestamp AT TIME ZONE 'Asia/Karachi')
+       GROUP BY lower(counterparty) ORDER BY total DESC LIMIT 5`,
+      [from, to, kinds, OWN_ACCOUNTS],
+    ),
+  ]);
+  const total = now.reduce((a, r) => a + r.sums.income + r.sums.remittance, 0);
+  const n = now.reduce((a, r) => a + r.total, 0);
+  const before = prev.reduce((a, r) => a + r.sums.income + r.sums.remittance, 0);
+  if (!n) return { text: `No ${what.toLowerCase()} ${label}.` };
+  const lines = [`*${what} ${label}: ${rs(total)}* (${n} payment${n === 1 ? "" : "s"})`];
+  if (before > 0) {
+    const d = Math.round(((total - before) / before) * 100);
+    lines.push(`The ${days} days before: ${rs(before)} (${d >= 0 ? "+" : ""}${d}%).`);
+  }
+  if (top.rows.length > 1) {
+    lines.push("", "From:");
+    for (const r of top.rows) lines.push(`• ${r.who}: ${rs(r.total)}${r.n > 1 ? ` (${r.n})` : ""}`);
+  }
+  const latest = now.flatMap((r) => r.items).sort((x, y) => Date.parse(y.occurred_at) - Date.parse(x.occurred_at)).slice(0, 5);
+  lines.push("", "Latest:");
+  for (const t of latest) lines.push(`• ${day(t.occurred_at)} · ${rs(t.amount_paisa)} · ${t.counterparty ?? t.note ?? t.category}`);
   return { text: lines.join("\n") };
 }
 
@@ -152,6 +211,38 @@ export async function findTransactions(i: { query?: string; category?: string; k
   });
   if (r.total > r.items.length) lines.push(`…and ${r.total - r.items.length} more.`);
   return { text: lines.join("\n") };
+}
+
+export const MAX_INVOICES = 10;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Invoice pictures for the transactions asked for: by id, or the latest ones matching a search. Never for bank charges or tax. */
+export async function invoices(i: { ids?: string[]; query?: string; category?: string; kind?: "expense" | "income" | "remittance"; from?: string; to?: string; limit?: number }): Promise<ToolOutput> {
+  const limit = Math.min(MAX_INVOICES, Math.max(1, Math.round(i.limit ?? (i.ids?.length || 1))));
+  let ids = (i.ids ?? []).filter((x) => UUID.test(x));
+  if (!ids.length) {
+    let category: string | undefined;
+    let query = i.query?.trim() || undefined;
+    const cats = i.category || query ? await categoriesInUse() : [];
+    if (i.category) category = matchCategory(i.category, cats) ?? undefined;
+    if (query && !category) {
+      const c = matchCategory(query, cats);
+      if (c) [category, query] = [c, undefined];
+    }
+    // A few extra, since bank charge and tax rows are skipped.
+    const r = await listTransactions("app", {
+      q: query?.slice(0, 100), category, kind: i.kind,
+      from: isIsoDate(i.from) ? i.from : undefined, to: isIsoDate(i.to) ? i.to : undefined, page: 1, pageSize: limit + 10,
+    });
+    ids = r.items.filter((t) => canShareInvoice(t) && t.category !== OWN_ACCOUNTS).slice(0, limit).map((t) => t.id);
+  }
+  const rows = (await invoiceTransactions(ids.slice(0, MAX_INVOICES))).filter(canShareInvoice);
+  if (!rows.length) {
+    return { text: i.ids?.length ? "Those can't get an invoice (bank charges and tax don't have their own)." : "No payments found for an invoice." };
+  }
+  const lines = [`${rows.length === 1 ? "This invoice picture is" : `These ${rows.length} invoice pictures are`} sent right after your reply, so don't list them again:`];
+  for (const t of rows) lines.push(`• ${invoiceRef(t.id)} · ${day(t.occurred_at)} · ${t.kind === "expense" ? "" : "+"}${rs(t.amount_paisa)} · ${invoiceTitle(t)} [id ${t.id}]`);
+  return { text: lines.join("\n"), invoices: rows };
 }
 
 export async function splitsOwed(i: { person?: string }): Promise<ToolOutput> {

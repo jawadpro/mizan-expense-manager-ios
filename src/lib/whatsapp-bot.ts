@@ -8,8 +8,11 @@ import { getPrefs } from "./repo";
 import { confirmReply, fitWhatsApp, linkCodeIn, type InboundMessage } from "./whatsapp";
 import type { WhatsAppSettings } from "./whatsapp-config";
 import {
-  addTurns, clearTurns, firstDelivery, numberByPhone, recentTurns, redeemLinkCode, sendText, setPending, showTyping, takePending, touchNumber,
+  addTurns, clearTurns, firstDelivery, numberByPhone, recentTurns, redeemLinkCode, sendImage, sendText, setPending, showTyping, takePending, touchNumber,
+  uploadImage,
 } from "./whatsapp-repo";
+import { invoiceRef, invoiceText, type InvoiceTx } from "./invoice-data";
+import { invoicePngServer } from "./invoice-image";
 
 // One incoming WhatsApp message, start to finish: who sent it, linking, YES/NO for a waiting change, then the answer.
 
@@ -75,9 +78,25 @@ export async function handleInbound(s: WhatsAppSettings, m: InboundMessage): Pro
     const a = await answer(s, history, text, pending?.summary ?? null);
     if (a.proposal) await setPending(linked.id, a.proposal.action, a.proposal.summary);
     await reply(a.reply);
-    await addTurns(linked.id, [{ role: "user", body: text }, { role: "assistant", body: a.reply }]);
+    if (a.invoices?.length) await sendInvoices(s, m.from, a.invoices);
+    const sent = a.invoices?.length ? `${a.reply}\n(Sent invoices: ${a.invoices.map((t) => `${invoiceRef(t.id)} [id ${t.id}]`).join(", ")})` : a.reply;
+    await addTurns(linked.id, [{ role: "user", body: text }, { role: "assistant", body: sent }]);
   } catch (e) {
     console.error("[mizan] whatsapp message failed", (e as Error)?.name, (e as { code?: string })?.code ?? "");
     await reply("Sorry, something went wrong on my side. Please try again in a moment.").catch(() => {});
+  }
+}
+
+/** Each invoice as a picture with a one-line caption. One that fails is sent as text instead, so nothing goes missing. */
+async function sendInvoices(s: WhatsAppSettings, to: string, list: InvoiceTx[]) {
+  for (const t of list) {
+    try {
+      const png = await invoicePngServer(t);
+      const id = await uploadImage(s, png, `mizan-${invoiceRef(t.id)}.png`);
+      await sendImage(s, to, id, invoiceText(t));
+    } catch (e) {
+      console.error("[mizan] invoice picture failed", (e as Error)?.name, (e as Error)?.message?.slice(0, 120));
+      await sendText(s, to, `🧾 ${invoiceText(t)}\n_(Couldn't make the picture for this one.)_`).catch(() => {});
+    }
   }
 }
