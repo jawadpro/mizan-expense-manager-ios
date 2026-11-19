@@ -95,7 +95,7 @@ Checks your savings against the gold or silver nisab using live metal prices, an
 | **Monthly payments** | A checklist for rent, bills and fees that starts fresh each month and suggests the matching payment so you can tick it off in one tap. |
 | **Home Screen widgets** | This month's payments on your iPhone's Home Screen or Lock Screen: tap one to mark it paid and link the transaction Mizan suggests. A second widget shows the bank alerts queued while you were offline, with their total, and imports them with one tap. Both run in the free Scriptable app and are listed under **More › Widgets** on an iPhone; see [`docs/widget.md`](docs/widget.md). |
 | **Bill splits** | Paid for everyone? Split a payment between people, share each person a receipt image from your phone, and tick their share off when their money comes in. Mizan spots the repayment for you. |
-| **Savings plan and spending check** | See how much you can realistically save each month, set limits per category, and get a gentle nudge when spending runs ahead of usual. |
+| **Savings plan and spending check** | See how much you can realistically save each month, set limits per category, and get a gentle nudge when spending runs ahead of usual. Optional AI ideas from OpenAI (see [docs/ai-ideas.md](docs/ai-ideas.md)). |
 | **Set-asides** | Rules such as "10% of every remittance for charity". Mizan tracks what has built up and what you've paid out. |
 | **Zakat** | Checks your savings against the gold or silver nisab using live metal prices, and keeps a record of each year's Zakat. |
 | **Any bank, any currency** | Add your banks and teach Mizan a new bank's alert format by pasting one example. Amounts can be shown in PKR, INR, USD, GBP, EUR, AED, SAR and more. |
