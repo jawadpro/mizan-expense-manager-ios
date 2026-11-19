@@ -14,7 +14,8 @@
   <a href="#features">Features</a> ·
   <a href="#how-it-works">How it works</a> ·
   <a href="#privacy-and-security">Privacy</a> ·
-  <a href="docs/iphone-pairing.md">iPhone pairing</a>
+  <a href="docs/iphone-pairing.md">iPhone pairing</a> ·
+  <a href="docs/whatsapp.md">WhatsApp</a>
 </p>
 
 <p align="center">
@@ -95,6 +96,7 @@ Checks your savings against the gold or silver nisab using live metal prices, an
 | **Monthly payments** | A checklist for rent, bills and fees that starts fresh each month and suggests the matching payment so you can tick it off in one tap. |
 | **Home Screen widgets** | This month's payments on your iPhone's Home Screen or Lock Screen: tap one to mark it paid and link the transaction Mizan suggests. A second widget shows the bank alerts queued while you were offline, with their total, and imports them with one tap. Both run in the free Scriptable app and are listed under **More › Widgets** on an iPhone; see [`docs/widget.md`](docs/widget.md). |
 | **Bill splits** | Paid for everyone? Split a payment between people, share each person a receipt image from your phone, and tick their share off when their money comes in. Mizan spots the repayment for you. |
+| **WhatsApp assistant** | Ask "food this month", "how am I doing" or "who owes me" on WhatsApp, and ask "net flow this month" or "remittance this month", split a bill by name ("split 3000 dinner with Ali and Sara"), and get invoices back as pictures ("invoices for the last 3 payments"). Free command mode out of the box, or full AI chat with your own Anthropic key. Changes always wait for your YES. Set up in **Settings › WhatsApp**; see [`docs/whatsapp.md`](docs/whatsapp.md). |
 | **Savings plan and spending check** | See how much you can realistically save each month, set limits per category, and get a gentle nudge when spending runs ahead of usual. |
 | **Set-asides** | Rules such as "10% of every remittance for charity". Mizan tracks what has built up and what you've paid out. |
 | **Zakat** | Checks your savings against the gold or silver nisab using live metal prices, and keeps a record of each year's Zakat. |
@@ -203,6 +205,7 @@ Open <http://localhost:3000> and the setup wizard takes you through the same ste
 - **A key per iPhone.** Each paired iPhone gets its own key, stored only as a hash. Remove an iPhone and its key stops working at once.
 - **Widgets can only see payments.** A Home Screen widget gets its own key, which can read and mark monthly payments and start an import of queued alerts, nothing else.
 - **No duplicates.** Re-sent alerts are detected by a fingerprint and the bank's reference number.
+- **WhatsApp answers only your numbers.** Each number is linked with a single-use code, every webhook must carry Meta's signature, and the Meta and Anthropic keys are stored encrypted. With AI chat on, the figures for each question go to Anthropic to write the answer.
 - **Your data stays with you.** It lives in your own database, and Mizan has no analytics or third-party trackers.
 
 ## Limitations
@@ -226,6 +229,7 @@ Only `DATABASE_URL` is required. Everything else is either created by the setup 
 | `SMS_AUTO_IMPORT` | Optional. Set to `false` to send every alert to the Review inbox. |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | Optional. Web push keys (created by setup if empty). |
 | `CRON_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Optional. Nightly Google Drive backups. |
+| `WHATSAPP_*`, `ANTHROPIC_API_KEY`, `MIZAN_AI_MODEL` | Optional. The WhatsApp assistant is set up in **Settings › WhatsApp**; these override it. See [`docs/whatsapp.md`](docs/whatsapp.md). |
 
 <details>
 <summary><b>Google Drive backups (optional)</b></summary>
