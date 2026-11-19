@@ -39,3 +39,7 @@
 .sv-strip:hover { border-color: var(--border-strong); }
 .sv-strip .progress { flex: 1 1 120px; margin-top: 0; min-width: 100px; }
 .sv-strip-title { font-weight: 500; }
+.sv-ai .card-head { gap: 10px; }
+.sv-ai-summary { margin: 0 0 10px; font-size: 0.92rem; }
+.sv-ai-kind { margin-right: 8px; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+.tip.grow::before { background: var(--gold); }

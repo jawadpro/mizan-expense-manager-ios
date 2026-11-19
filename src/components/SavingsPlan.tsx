@@ -13,6 +13,7 @@ import { useToast } from "./Toast";
 import CloseButton from "./CloseButton";
 import { LimitModal, TIPS_CHANGED, type LimitEdit } from "./SpendingCheck";
 import BankPicker from "./BankPicker";
+import AiSavingsIdeas from "./AiSavingsIdeas";
 import { useBanks } from "./useBanks";
 import { useSelectedBank } from "./useSelectedBank";
 
@@ -174,6 +175,8 @@ export default function SavingsPlan() {
         )}
       </section>
 
+      <AiSavingsIdeas bank={bank} />
+
       <div className="sv-grid">
         <section className="card">
           <div className="card-head"><h2>Recent months</h2></div>
@@ -206,7 +209,7 @@ export default function SavingsPlan() {
         </section>
       </div>
 
-      <p className="small muted spend-note">Worked out on your own records only; nothing is sent anywhere. Fixed costs (rent, bills, school, health, tax, giving) are never counted as cuts.</p>
+      <p className="small muted spend-note">Worked out on your own records only; nothing is sent anywhere unless you ask for AI ideas. Fixed costs (rent, bills, school, health, tax, giving) are never counted as cuts.</p>
 
       {editTarget && (
         <TargetModal
