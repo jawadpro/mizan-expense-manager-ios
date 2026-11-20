@@ -7,15 +7,14 @@ import BankList from "@/components/BankList";
 import BankMessages from "@/components/BankMessages";
 import MessageTester from "@/components/MessageTester";
 import PushToggle from "@/components/PushToggle";
-import ForIphone from "@/components/ForIphone";
-import ConnectedDevices from "@/components/ConnectedDevices";
+import PhoneConnect from "@/components/PhoneConnect";
 import { useToast } from "@/components/Toast";
 import { useData } from "@/components/useData";
 import type { BankItem } from "@/components/useBanks";
 import type { DbState } from "@/lib/config";
 import BrandMark from "@/components/BrandMark";
 
-const STEPS = ["Database", "Passphrase", "Banks", "Your name", "iPhone", "Finish"] as const;
+const STEPS = ["Database", "Passphrase", "Banks", "Your name", "Phone", "Finish"] as const;
 const MIN_PASSPHRASE = 12;
 
 function Stepper({ at }: { at: number }) {
@@ -172,9 +171,9 @@ function NameStep({ back, next }: { back: () => void; next: () => void }) {
 function IphoneStep({ back, next }: { back: () => void; next: () => void }) {
   return (
     <>
-      <h1>Connect your iPhone</h1>
-      <p className="muted">The Mizan Shortcut sends each bank SMS to Mizan as it arrives. <ForIphone iphone={<>Tap the two buttons below to connect: nothing to copy or type.</>} other={<>Scan the QR code with your iPhone to connect: nothing to copy or type.</>} /> You can also do this later from Connect iPhone in the menu.</p>
-      <div className="setup-panel cx-wizard"><ConnectedDevices /></div>
+      <h1>Connect your phone</h1>
+      <p className="muted">Your phone sends each bank SMS to Mizan as it arrives: the Mizan Shortcut on iPhone, or an SMS forwarder app on Android. Scan the QR code with your phone to connect. You can also do this later from Connect phone in the menu.</p>
+      <div className="setup-panel cx-wizard"><PhoneConnect /></div>
       <div className="setup-actions">
         <button className="btn ghost" onClick={back}>Back</button>
         <button className="btn primary" onClick={next}>Continue</button>

@@ -38,13 +38,24 @@ export const transactionInput = z.object({
 });
 export type TransactionInput = z.infer<typeof transactionInput>;
 
+/** Unix time in seconds (10 digits) or milliseconds (13 digits) as an ISO string. */
+const unixToIso = (n: number) => new Date(n < 1e12 ? n * 1000 : n).toISOString();
+
 export const smsInput = z.object({
   sender: z.string().min(1).max(64),
   text: z.string().min(1).max(1000),
+  // ISO 8601 with a timezone (the iPhone Shortcut), or Unix time in seconds or milliseconds (Android SMS forwarder
+  // apps, which can't format dates). Left out: the alert is taken as received now.
   receivedAt: z
-    .string()
-    .max(40)
-    .refine((s) => /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d{1,6})?)?(Z|[+-]\d{2}:?\d{2})$/.test(s) && !Number.isNaN(Date.parse(s)), "receivedAt must be ISO 8601 with a timezone, e.g. 2026-10-15T14:30:00+05:00"),
+    .union([
+      z
+        .string()
+        .max(40)
+        .refine((s) => /^\d{10}(\d{3})?$/.test(s) || (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d{1,6})?)?(Z|[+-]\d{2}:?\d{2})$/.test(s) && !Number.isNaN(Date.parse(s))), "receivedAt must be ISO 8601 with a timezone, e.g. 2026-10-15T14:30:00+05:00, or Unix time"),
+      z.number().int().min(1e9).max(1e13),
+    ], { message: "receivedAt must be ISO 8601 with a timezone, e.g. 2026-10-15T14:30:00+05:00, or Unix time" })
+    .optional()
+    .transform((v) => (v === undefined ? undefined : typeof v === "number" || /^\d+$/.test(v) ? unixToIso(Number(v)) : v)),
   // The Shortcut's connection test: read the alert, save nothing.
   test: z.boolean().optional(),
   // Sent from the offline queue by "Import queued messages": counted under that run.

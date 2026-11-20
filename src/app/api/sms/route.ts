@@ -22,8 +22,9 @@ async function sender(token: string): Promise<string | null | false> {
 }
 
 /**
- * Receives bank alert SMS forwarded by an iPhone Shortcut.
- * Auth: `Authorization: Bearer <this iPhone's token from pairing, or SMS_INGEST_TOKEN>`. With `"test": true` the
+ * Receives bank alert SMS forwarded by an iPhone Shortcut, or by an Android phone (Mizan Companion or an SMS forwarder).
+ * Auth: `Authorization: Bearer <this phone's token from pairing, or SMS_INGEST_TOKEN>`, or for Android forwarder apps
+ * that can't set headers, `"key": "<this phone's token>"` in the body. With `"test": true` the
  * alert is only read, never saved. The token and message text are never logged.
  */
 export const POST = handle(async (req: Request) => {
@@ -31,18 +32,29 @@ export const POST = handle(async (req: Request) => {
   if (!(await rateLimit(`sms:ip:${ip}`, 30, 60))) return errorJson(429, "Too many requests", {});
 
   const auth = req.headers.get("authorization") ?? "";
-  const m = /^Bearer\s+(\S{1,512})$/.exec(auth);
-  const deviceId = m ? await sender(m[1]) : false;
+  let body: unknown = undefined;
+  let token = /^Bearer\s+(\S{1,512})$/.exec(auth)?.[1] ?? null;
+  if (!token && !auth) {
+    // Some Android SMS forwarder apps can't set headers: they may send this phone's key as "key" in the JSON body
+    // instead. Only a paired device's key is accepted there, never the SMS token.
+    body = await readJson(req, MAX_BODY_BYTES);
+    if (body && typeof body === "object" && !Array.isArray(body) && "key" in body) {
+      const { key, ...rest } = body as Record<string, unknown>;
+      body = rest;
+      token = typeof key === "string" && looksLikeDeviceToken(key) ? key : null;
+    }
+  }
+  const deviceId = token ? await sender(token) : false;
   if (deviceId === false) {
     // Slow down token guessing: 10 failures per IP per 10 minutes.
     await rateLimit(`sms:fail:${ip}`, 10, 600);
-    return errorJson(401, m && looksLikeDeviceToken(m[1])
-      ? "This iPhone isn't connected to Mizan any more. Scan the QR code in Mizan › Connect iPhone again."
+    return errorJson(401, token && looksLikeDeviceToken(token)
+      ? "This phone isn't connected to Mizan any more. Scan the QR code in Mizan › Connect phone again."
       : "Invalid or missing bearer token");
   }
   if (!(await rateLimit("sms:global", 120, 60))) return errorJson(429, "Too many requests");
 
-  const body = await readJson(req, MAX_BODY_BYTES);
+  if (body === undefined) body = await readJson(req, MAX_BODY_BYTES);
   const done = importFinished.safeParse(body);
   if (done.success) {
     const run = await finishImportRun(done.data.importRun, deviceId);
@@ -53,13 +65,13 @@ export const POST = handle(async (req: Request) => {
   if (!parsed.success) {
     return errorJson(400, "Invalid payload", { issues: parsed.error.issues.map((i) => `${i.path.join(".") || "body"}: ${i.message}`) });
   }
-  const receivedAt = new Date(parsed.data.receivedAt);
+  const receivedAt = parsed.data.receivedAt ? new Date(parsed.data.receivedAt) : new Date();
   if (receivedAt.getTime() > Date.now() + 10 * 60e3) return errorJson(400, "receivedAt is in the future");
 
   const input = { sender: parsed.data.sender, text: parsed.data.text, receivedAt };
   if (parsed.data.test) {
     if (deviceId) await recordTest(deviceId);
-    return json({ ok: true, test: true, message: "Mizan received a test from this iPhone. Nothing was saved.", reading: await previewSms(input) });
+    return json({ ok: true, test: true, message: "Mizan received a test from this phone. Nothing was saved.", reading: await previewSms(input) });
   }
   let out;
   try {

@@ -42,7 +42,7 @@
   .iph-qr .qr { width: 180px; height: 180px; }
 }
 
-/* Connect iPhone page */
+/* Connect phone page */
 .cx-page { display: grid; gap: 16px; max-width: 760px; }
 .cx-notes h3 { margin: 0 0 8px; }
 .cx-notes ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; font-size: 0.93rem; line-height: 1.55; color: var(--muted); }
@@ -93,3 +93,11 @@
 .pair-flow-head { display: flex; align-items: center; gap: 10px; }
 .pair-flow li.done .iph-dot { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 .pair-flow .btn { justify-content: center; min-height: 46px; }
+
+/* Android: values to paste into the SMS forwarder app */
+.copy-field { display: grid; gap: 6px; margin: 0 0 10px; }
+.copy-field-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.copy-field input, .copy-field textarea { width: 100%; font-size: 0.8rem; resize: none; word-break: break-all; }
+.phone-tabs { display: inline-flex; gap: 4px; padding: 4px; border-radius: 999px; background: var(--surface-2, var(--surface)); border: 1px solid var(--border); margin: 0 0 14px; }
+.phone-tabs button { border: 0; background: transparent; padding: 6px 14px; border-radius: 999px; font: inherit; font-size: 0.9rem; color: var(--muted, inherit); cursor: pointer; }
+.phone-tabs button[aria-selected="true"] { background: var(--text); color: var(--surface); }

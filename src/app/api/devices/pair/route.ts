@@ -43,7 +43,9 @@ async function pair(req: Request, body: unknown) {
     return out.reason === "limit"
       ? errorJson(409, out.kind === "widget"
         ? "Mizan already has 5 widgets connected. Remove one in Mizan › Monthly payments › Widget first."
-        : "Mizan already has 5 iPhones connected. Remove one in Mizan first.")
+        : out.kind === "android"
+          ? "Mizan already has 5 Android phones connected. Remove one in Mizan › Connect phone first."
+          : "Mizan already has 5 iPhones connected. Remove one in Mizan first.")
       : errorJson(400, "That code didn't work. Codes work once and only for 10 minutes; make a new one in Mizan.");
   }
   // Everything the Shortcut needs to send alerts, ready to use as they are: the URL and the Authorization header.
@@ -59,8 +61,8 @@ async function pair(req: Request, body: unknown) {
     }, 201, { "cache-control": "no-store" });
   }
   return json({
-    ok: true, deviceId: out.deviceId, token: out.token,
+    ok: true, kind: out.kind, deviceId: out.deviceId, token: out.token, server,
     endpoint: `${server}/api/sms`, authorization: `Bearer ${out.token}`, confirm: `${server}/api/devices/confirm`,
-    message: "This iPhone is connected to Mizan.",
+    message: out.kind === "android" ? "This phone is connected to Mizan." : "This iPhone is connected to Mizan.",
   }, 201, { "cache-control": "no-store" });
 }

@@ -72,7 +72,7 @@ function ShellBody({ space, children, currency = DEFAULT_CURRENCY }: ShellProps)
     ...(space === "app" ? [{ href: `${base}/reconcile`, label: "Check a statement", icon: ICONS.statement }] : []),
   ];
   const setupLinks = space === "app" ? [
-    { href: `${base}/sms`, label: "Connect iPhone", icon: ICONS.phone },
+    { href: `${base}/sms`, label: "Connect phone", icon: ICONS.phone },
     { href: `${base}/backup`, label: "Backups", icon: ICONS.cloud },
     { href: `${base}/settings`, label: "Settings", icon: ICONS.gear },
   ] : [];
@@ -126,14 +126,14 @@ function ShellBody({ space, children, currency = DEFAULT_CURRENCY }: ShellProps)
     const nav = navigator as Navigator & { setAppBadge?: (n?: number) => Promise<void>; clearAppBadge?: () => Promise<void> };
     (pending > 0 ? nav.setAppBadge?.(pending) : nav.clearAppBadge?.())?.catch(() => {});
   }, [space, pending]);
-  // Whether an iPhone is connected, for the red or green dot beside Connect iPhone. Refreshed like the count above.
+  // Whether a phone (iPhone or Android) is connected, for the red or green dot beside Connect phone. Refreshed like the count above.
   const [iphone, setIphone] = useState<boolean | null>(null);
   useEffect(() => {
     if (space !== "app") return;
     let live = true;
     const load = () =>
-      apiFetch<{ items: { revoked_at: string | null; last_seen_at: string | null }[] }>("/api/devices")
-        .then((d) => live && setIphone(d.items.some((x) => !x.revoked_at && !!x.last_seen_at)))
+      apiFetch<{ anyPhone?: boolean; items: { revoked_at: string | null; last_seen_at: string | null }[] }>("/api/devices")
+        .then((d) => live && setIphone(d.anyPhone ?? d.items.some((x) => !x.revoked_at && !!x.last_seen_at)))
         .catch(() => {});
     load();
     const onVisible = () => document.visibilityState === "visible" && load();
