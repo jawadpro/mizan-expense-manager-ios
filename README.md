@@ -86,7 +86,7 @@ Checks your savings against the gold or silver nisab using live metal prices, an
 | | |
 |---|---|
 | **Automatic SMS import** | The Mizan Shortcut sends each bank alert to Mizan. Mizan reads the amount, the direction (spent or received), the date, who it was with and the category. |
-| **One-scan iPhone pairing** | Open **Connect iPhone**, scan the QR code, tap two buttons. The Shortcut saves your Mizan's address and its own key by itself. A dot in the menu shows red until an iPhone is connected, then green. |
+| **One-scan iPhone pairing** | Open **Connect phone**, scan the QR code, tap two buttons. The Shortcut saves your Mizan's address and its own key by itself. A dot in the menu shows red until an iPhone is connected, then green. |
 | **Review inbox** | Mizan never guesses. Alerts it can't read with confidence wait for you to confirm, such as reversals, pending payments, foreign currency or unknown wording. |
 | **Live bank balance** | Set your balance once. Every transaction after that keeps it up to date, and editing or deleting a transaction corrects it. Works with several banks, with a filter for each. |
 | **Own-account transfers** | Money moved between your own accounts isn't counted as spending or income. Track a single account and every rupee in and out still counts. |
@@ -155,13 +155,13 @@ This takes about 10 minutes, and **only one setting is required**. The app walks
    2. **Passphrase:** the one passphrase you'll sign in with.
    3. **Banks:** the banks you get alerts from and their SMS sender names.
    4. **Currency, your name, and a test:** pick your currency, enter your name as banks print it (so transfers between your own accounts aren't counted as spending), and paste a real alert to check that Mizan reads it correctly.
-   5. **iPhone:** scan a QR code to connect your iPhone (see below).
+   5. **Phone:** scan a QR code to connect your iPhone or Android phone (see below).
    6. **Finish.**
 5. **Add it to your Home Screen.** Open your app in **Safari**, tap **Share**, then **Add to Home Screen**. Open Mizan from the Home Screen icon to use it full screen and get notifications.
 
 ### 2. Connect your iPhone
 
-Open **Connect iPhone** in the app's menu. The dot beside it is red until an iPhone is connected, then green.
+Open **Connect phone** in the app's menu and pick **iPhone** or **Android**. The dot beside it is red until a phone is connected, then green.
 
 1. On your computer, Mizan shows a QR code. Point your iPhone's **Camera** at it and tap the link. (Already using
    Mizan on the iPhone? The same two buttons are right on the page.)
@@ -175,6 +175,15 @@ Your next bank alert appears in Mizan within a few seconds.
 
 No internet when an alert arrives? The Shortcut keeps it. Back online, open Mizan on your iPhone, tap **More**, then
 **Import queued messages**. See [`docs/iphone-pairing.md`](docs/iphone-pairing.md) for how pairing works.
+
+### Or connect an Android phone
+
+Open **Connect phone** and pick **Android**. Point the phone's camera at the QR code, open the link, and tap **Get my key**.
+Then copy the **Webhook URL** and **JSON template** it shows into the free, open-source
+[SMS to URL Forwarder](https://f-droid.org/packages/tech.bogomolov.incomingsmsgateway/) app (sender `*`), and tap
+**Send a test**. Android forwards each bank SMS in the background by itself, and the app retries when there's no
+internet. Each Android phone gets its own key and can be removed from **Connect phone**. See
+[`docs/android.md`](docs/android.md).
 
 **Want widgets on the Home Screen?** On your iPhone, open **More → Widgets** in Mizan and follow the steps. See [`docs/widget.md`](docs/widget.md).
 

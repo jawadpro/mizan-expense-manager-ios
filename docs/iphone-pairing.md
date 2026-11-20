@@ -1,6 +1,6 @@
 # Connecting an iPhone with a pairing code
 
-**Connect iPhone** in the menu shows one QR code. Scanning it on the iPhone adds the Mizan Shortcut (first time only)
+**Connect phone** › **iPhone** in the menu shows one QR code. Scanning it on the iPhone adds the Mizan Shortcut (first time only)
 and pairs it. Then the page shows the second and last step: turning on the Message automation. Nothing is copied or typed by
 hand. The menu item has a red dot until an iPhone is connected, and a green one after.
 
@@ -163,7 +163,7 @@ You can delete the separate **Import Queued Messages** Shortcut once this works.
 
 1. In Shortcuts › **Settings** (or iPhone Settings › Apps › Shortcuts) › **Advanced**: turn on
    **Allow Deleting Without Confirmation**.
-2. In Mizan, open **Connect iPhone** and scan the QR code.
+2. In Mizan, open **Connect phone** › **iPhone** and scan the QR code.
 3. Optional: run the Shortcut once by hand to send a test alert (nothing is saved). Choose **Always Allow** when iPhone asks.
 4. To check the import: turn on Airplane Mode, send yourself a test, turn it off, then tap **Import queued messages** in
    Mizan's More menu on the iPhone.

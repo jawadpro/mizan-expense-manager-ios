@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import PairSteps from "./PairSteps";
 import QrCode from "./QrCode";
-import { ago, isConnected, isIphone, useDevices, usePairingCode, type Device } from "./paired-devices";
+import { ago, isIphone, useDevices, useNewlyPaired, usePairingCode, type Device } from "./paired-devices";
 
 /**
  * Pairing. On a computer: one QR code. Scanning it opens Mizan's pairing page on the iPhone, which adds the Shortcut
@@ -13,29 +13,11 @@ import { ago, isConnected, isIphone, useDevices, usePairingCode, type Device } f
  */
 export function PairIphone({ onPaired, replaces }: { onPaired: (d: Device) => void; replaces?: string }) {
   const devices = useDevices(true);
-  const [paired, setPaired] = useState<Device | null>(null);
+  // halfway: the code was used, but the iPhone hasn't confirmed it kept its key yet.
+  const { paired, halfway } = useNewlyPaired(devices.data?.items, onPaired);
   const { code, error, secondsLeft, renew } = usePairingCode(!paired, { replaces });
   const [phone, setPhone] = useState(false);
   useEffect(() => setPhone(isIphone()), []);
-  const [known] = useState(() => new Set<string>());
-  const [baseline, setBaseline] = useState(false);
-
-  const items = devices.data?.items;
-  useEffect(() => {
-    if (!items) return;
-    if (!baseline) {
-      items.forEach((d) => known.add(d.id));
-      setBaseline(true);
-      return;
-    }
-    const done = items.find((d) => !known.has(d.id) && isConnected(d));
-    if (done && !paired) {
-      setPaired(done);
-      onPaired(done);
-    }
-  }, [items, baseline, known, paired, onPaired]);
-  // The code was used, but the iPhone hasn't confirmed it kept its key yet.
-  const halfway = baseline && !paired && !!items?.some((d) => !known.has(d.id) && !d.revoked_at && !d.last_seen_at);
 
   useEffect(() => {
     if (code && secondsLeft === 0 && !paired) renew();

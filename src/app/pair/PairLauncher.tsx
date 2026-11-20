@@ -15,7 +15,7 @@ export default function PairLauncher({ server, shortcutName, shortcutUrl }: { se
   }, []);
   if (code === null) return null;
   if (!code) {
-    return <div className="alert error" role="alert">This link is incomplete. In Mizan, open Connect iPhone and scan the new QR code.</div>;
+    return <div className="alert error" role="alert">This link is incomplete. In Mizan, open Connect phone › iPhone and scan the new QR code.</div>;
   }
   return <PairSteps runUrl={shortcutRunUrl(shortcutName, pairPayload(server, code))} shortcutUrl={shortcutUrl} shortcutName={shortcutName} code={`${code.slice(0, 4)}-${code.slice(4)}`} />;
 }

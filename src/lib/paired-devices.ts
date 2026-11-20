@@ -11,15 +11,19 @@ import { formatCode, normalizeCode, randomCode } from "./pairing-code";
 // token keep working; the app just no longer shows that way.
 
 export const PAIRING_TTL_MIN = 10;
-/** At most this many iPhones, and separately this many widgets. */
+/** At most this many iPhones, and separately this many widgets and this many Android phones. */
 export const MAX_DEVICES = 5;
 
 /**
  * "shortcut": the Mizan Shortcut on an iPhone, which sends bank alerts. "widget": a home-screen widget (Scriptable),
- * whose key can only read the monthly payments checklist and mark payments.
+ * whose key can only read the monthly payments checklist and mark payments. "android": an Android phone (the Mizan
+ * Companion app or an SMS forwarder app), which sends bank alerts like an iPhone.
  */
-export type DeviceKind = "shortcut" | "widget";
-export const DEVICE_KINDS: readonly DeviceKind[] = ["shortcut", "widget"];
+export type DeviceKind = "shortcut" | "widget" | "android";
+export const DEVICE_KINDS: readonly DeviceKind[] = ["shortcut", "widget", "android"];
+/** The kinds whose key may send bank alerts. */
+export const SMS_KINDS: readonly DeviceKind[] = ["shortcut", "android"];
+export const isDeviceKind = (s: unknown): s is DeviceKind => typeof s === "string" && (DEVICE_KINDS as readonly string[]).includes(s);
 const TOKEN_RE = /^mzd_[A-Za-z0-9_-]{43}$/;
 
 /**
@@ -108,7 +112,7 @@ export async function redeemPairingCode(rawCode: string, rawName: string): Promi
       `SELECT count(*)::int AS n FROM app.paired_devices WHERE revoked_at IS NULL AND kind = $2 AND id IS DISTINCT FROM $1::uuid`,
       [pc.replaces_id, kind]);
     if (active.rows[0].n >= MAX_DEVICES) return { ok: false, reason: "limit", kind } as const;
-    const fallback = kind === "widget" ? "Widget" : "iPhone";
+    const fallback = kind === "widget" ? "Widget" : kind === "android" ? "Android phone" : "iPhone";
     const name = (pc.device_name || keptName || priorName || rawName.replace(/[\u0000-\u001f]/g, "").trim() || fallback).slice(0, 60);
     const dev = await run<{ id: string }>(
       `INSERT INTO app.paired_devices (name, token_digest, token_hint, kind) VALUES ($1, $2, $3, $4) RETURNING id`,
@@ -124,9 +128,9 @@ export const looksLikeDeviceToken = (t: string) => TOKEN_RE.test(t);
 /**
  * The paired device a token belongs to, or null (wrong, removed, or not one of `kinds`). The first time a token is
  * used, the pairing is confirmed: the device has saved its key. Only then does a Reconnect stop the old token.
- * Sending bank alerts takes a Shortcut's key; a widget's key only works for the widget endpoints.
+ * Sending bank alerts takes an iPhone's or an Android phone's key; a widget's key only works for the widget endpoints.
  */
-export async function authenticateDevice(token: string, kinds: readonly DeviceKind[] = ["shortcut"]): Promise<string | null> {
+export async function authenticateDevice(token: string, kinds: readonly DeviceKind[] = SMS_KINDS): Promise<string | null> {
   if (!TOKEN_RE.test(token)) return null;
   const { rows } = await q<{ id: string; first: boolean }>(
     `UPDATE app.paired_devices p SET last_seen_at = now()
@@ -179,6 +183,15 @@ export async function listDevices(kind: DeviceKind = "shortcut"): Promise<Device
     [kind],
   );
   return rows;
+}
+
+/** Whether any phone (iPhone or Android) is connected and can send bank alerts, for the menu's dot. */
+export async function anyPhoneConnected(): Promise<boolean> {
+  const { rows } = await q<{ on: boolean }>(
+    `SELECT EXISTS (SELECT 1 FROM app.paired_devices WHERE kind = ANY($1::text[]) AND revoked_at IS NULL AND last_seen_at IS NOT NULL) AS on`,
+    [[...SMS_KINDS]],
+  );
+  return rows[0]?.on ?? false;
 }
 
 /** What happened to the latest pairing code, for the setup screen to follow along. */

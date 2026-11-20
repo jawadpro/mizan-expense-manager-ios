@@ -3,7 +3,8 @@ import { useCallback, useEffect, useState } from "react";
 import { apiFetch } from "./api";
 import CloseButton from "./CloseButton";
 import { AutomationGuide, PairIphone } from "./IphoneSetup";
-import { ago, deviceStatus, isConnected, useDevices, type Device, type DevicesInfo } from "./paired-devices";
+import { ForwarderGuide, PairAndroid } from "./AndroidSetup";
+import { ago, deviceStatus, isConnected, useDevices, type Device, type DevicesInfo, type PhoneKind } from "./paired-devices";
 import { useToast } from "./Toast";
 import "@/app/setup.css";
 
@@ -13,10 +14,16 @@ const PHONE = (
   </svg>
 );
 
-const STEPS = ["Scan", "Automation"] as const;
+/** The words that differ between iPhones and Android phones. */
+const WORDS = {
+  shortcut: { one: "iPhone", many: "iPhones", steps: ["Scan", "Automation"], next: "Now turn on the automation" },
+  android: { one: "Android phone", many: "Android phones", steps: ["Scan", "Forwarder"], next: "Now set up the forwarder app" },
+} as const;
 
 /** "Add another iPhone" or "Reconnect" (which replaces a device's key) as a short guided dialog. */
-function ConnectDialog({ info, replaces, onClose }: { info: DevicesInfo | null; replaces?: Device; onClose: () => void }) {
+function ConnectDialog({ kind, info, replaces, onClose }: { kind: PhoneKind; info: DevicesInfo | null; replaces?: Device; onClose: () => void }) {
+  const w = WORDS[kind];
+  const STEPS = w.steps;
   const [step, setStep] = useState(0);
   const [device, setDevice] = useState<Device | null>(null);
   useEffect(() => {
@@ -29,7 +36,7 @@ function ConnectDialog({ info, replaces, onClose }: { info: DevicesInfo | null; 
     <div className="modal-back" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div className="modal iph-modal" role="dialog" aria-modal="true" aria-labelledby="connect-title">
         <div className="modal-head">
-          <h2 id="connect-title">{replaces ? `Reconnect ${replaces.name}` : "Connect an iPhone"}</h2>
+          <h2 id="connect-title">{replaces ? `Reconnect ${replaces.name}` : kind === "android" ? "Connect an Android phone" : "Connect an iPhone"}</h2>
           <CloseButton onClick={onClose} />
         </div>
         <ol className="setup-steps" aria-label="Steps">
@@ -41,15 +48,15 @@ function ConnectDialog({ info, replaces, onClose }: { info: DevicesInfo | null; 
         </ol>
         {step === 0 && (
           <>
-            {replaces && <p className="small muted" style={{ margin: 0 }}>{replaces.name}&apos;s old key stops working once the iPhone has saved the new one.</p>}
-            <PairIphone onPaired={setDevice} replaces={replaces?.id} />
+            {replaces && <p className="small muted" style={{ margin: 0 }}>{replaces.name}&apos;s old key stops working once the {w.one} has used the new one.</p>}
+            {kind === "android" ? <PairAndroid onPaired={setDevice} replaces={replaces?.id} /> : <PairIphone onPaired={setDevice} replaces={replaces?.id} />}
           </>
         )}
-        {step === 1 && <AutomationGuide shortcutName={name} senders={[]} />}
+        {step === 1 && (kind === "android" ? <ForwarderGuide /> : <AutomationGuide shortcutName={name} senders={[]} />)}
         <div className="modal-foot">
           {step > 0 && <button className="btn ghost" onClick={() => setStep(step - 1)}>Back</button>}
           {step < STEPS.length - 1
-            ? <button className="btn primary" disabled={step === 0 && !device} onClick={() => setStep(step + 1)}>{step === 0 && !device ? "Waiting for iPhone…" : "Continue"}</button>
+            ? <button className="btn primary" disabled={step === 0 && !device} onClick={() => setStep(step + 1)}>{step === 0 && !device ? `Waiting for ${w.one}…` : "Continue"}</button>
             : <button className="btn primary" onClick={onClose}>Done</button>}
         </div>
       </div>
@@ -123,12 +130,13 @@ function DeviceItem({ d, onChanged, onReconnect }: { d: Device; onChanged: () =>
 }
 
 /**
- * Connect iPhone: the connection status, every paired iPhone, and pairing. Two steps: scan the QR code (right on the
+ * Connect phone: the connection status, every paired iPhone (or with kind "android", Android phone), and pairing. Two steps: scan the QR code (right on the
  * page while nothing is connected; "Add another iPhone" opens it in a dialog after that), then turn on the Message
  * automation, whose instructions stay underneath until the first bank alert arrives.
  */
-export default function ConnectedDevices() {
-  const { data, error, reload } = useDevices(true);
+export default function ConnectedDevices({ kind = "shortcut" }: { kind?: PhoneKind }) {
+  const w = WORDS[kind];
+  const { data, error, reload } = useDevices(true, kind);
   const [dialog, setDialog] = useState<{ replaces?: Device } | null>(null);
   const active = data?.items.filter((d) => !d.revoked_at) ?? [];
   const connected = active.filter(isConnected);
@@ -145,26 +153,28 @@ export default function ConnectedDevices() {
           <span className="status-dot" aria-hidden />
           <span>
             {connected.length
-              ? <><b>{connected.length === 1 ? "1 iPhone connected" : `${connected.length} iPhones connected`}</b><span className="muted"> · bank alerts come in by themselves</span></>
-              : <><b>Not connected</b><span className="muted"> · no bank alerts are coming in yet</span></>}
+              ? <><b>{connected.length === 1 ? `1 ${w.one} connected` : `${connected.length} ${w.many} connected`}</b><span className="muted"> · bank alerts come in by themselves</span></>
+              : data.anyPhone
+                ? <><b>No {w.one} connected</b><span className="muted"> · your other phone sends bank alerts</span></>
+                : <><b>Not connected</b><span className="muted"> · no bank alerts are coming in yet</span></>}
           </span>
         </div>
       )}
       {data && connected.length === 0 && (
         <div className="cx-pair">
-          <PairIphone onPaired={onPaired} />
+          {kind === "android" ? <PairAndroid onPaired={onPaired} /> : <PairIphone onPaired={onPaired} />}
         </div>
       )}
       {active.length > 0 && <ul className="dev-list" style={{ listStyle: "none", padding: 0, margin: "14px 0 0" }}>{active.map((d) => <DeviceItem key={d.id} d={d} onChanged={reload} onReconnect={() => setDialog({ replaces: d })} />)}</ul>}
       {connected.length > 0 && (
         <div className="toolbar" style={{ marginTop: 12 }}>
-          <button className="btn" onClick={() => setDialog({})}>Add another iPhone</button>
+          <button className="btn" onClick={() => setDialog({})}>Add another {w.one}</button>
         </div>
       )}
       {finishing && (
         <div className="cx-next">
-          <h3>Now turn on the automation</h3>
-          <AutomationGuide shortcutName={name} senders={[]} />
+          <h3>{w.next}</h3>
+          {kind === "android" ? <ForwarderGuide /> : <AutomationGuide shortcutName={name} senders={[]} />}
         </div>
       )}
       {removed.length > 0 && (
@@ -173,7 +183,7 @@ export default function ConnectedDevices() {
           <ul className="dev-list" style={{ listStyle: "none", padding: 0, margin: "10px 0 0" }}>{removed.map((d) => <DeviceItem key={d.id} d={d} onChanged={reload} onReconnect={() => {}} />)}</ul>
         </details>
       )}
-      {dialog && <ConnectDialog info={data} replaces={dialog.replaces} onClose={() => { setDialog(null); reload(); }} />}
+      {dialog && <ConnectDialog kind={kind} info={data} replaces={dialog.replaces} onClose={() => { setDialog(null); reload(); }} />}
     </div>
   );
 }

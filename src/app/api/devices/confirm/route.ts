@@ -17,9 +17,9 @@ async function confirm(req: Request) {
   const deviceId = m && looksLikeDeviceToken(m[1]) ? await authenticateDevice(m[1], DEVICE_KINDS) : null;
   if (!deviceId) {
     await rateLimit(`sms:fail:${ip}`, 10, 600);
-    return errorJson(401, "This iPhone isn't connected to Mizan. Scan the QR code in Mizan › Connect iPhone again.");
+    return errorJson(401, "This phone isn't connected to Mizan. Scan the QR code in Mizan › Connect phone again.");
   }
-  return json({ ok: true, message: "This iPhone is connected to Mizan." }, 200, { "cache-control": "no-store" });
+  return json({ ok: true, message: "This phone is connected to Mizan." }, 200, { "cache-control": "no-store" });
 }
 
 export const POST = handle(confirm);

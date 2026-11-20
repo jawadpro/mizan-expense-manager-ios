@@ -11,10 +11,13 @@ export const dynamic = "force-dynamic";
 const input = z.object({
   name: z.string().max(60).optional(),
   replaces: z.string().uuid().optional(),
-  kind: z.enum(["shortcut", "widget"]).optional(),
+  kind: z.enum(["shortcut", "widget", "android"]).optional(),
 }).strict();
 
-/** A fresh pairing code, plus the links that carry it to the Shortcut (or, with kind "widget", to the Scriptable widget). */
+/**
+ * A fresh pairing code, plus the links that carry it to the Shortcut (or, with kind "widget", to the Scriptable
+ * widget; with kind "android", to the Android phone's pairing page, which the Mizan Companion app also understands).
+ */
 export const POST = handle(async (req: Request) => {
   await requireSession(req);
   if (!(await rateLimit("paircode", 20, 3600))) return errorJson(429, "Too many codes in an hour. Try again later.");
@@ -28,6 +31,11 @@ export const POST = handle(async (req: Request) => {
     // The widget script opens this link itself and keeps the key it gets back in the iPhone's Keychain.
     const runUrl = scriptableRunUrl(WIDGET_SCRIPT_NAME, { pair: payload });
     return json({ ok: true, code: display, expiresAt, runUrl, pairPageUrl: `${server}/pair/widget#${code}`, payload, server });
+  }
+  if (parsed.data.kind === "android") {
+    // Scanned with the phone's camera it opens /pair/android, which hands the phone its key for an SMS forwarder app.
+    // The Mizan Companion app scans the same QR code: the address is everything before /pair, the code follows #.
+    return json({ ok: true, code: display, expiresAt, runUrl: `${server}/pair/android#${code}`, pairPageUrl: `${server}/pair/android#${code}`, payload, server });
   }
   const runUrl = shortcutRunUrl(shortcutConfig().name, payload);
   // Opened on the iPhone from the QR code: the code stays in the #fragment, which browsers never send to a server.
