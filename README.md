@@ -15,7 +15,8 @@
   <a href="#how-it-works">How it works</a> ·
   <a href="#privacy-and-security">Privacy</a> ·
   <a href="docs/iphone-pairing.md">iPhone pairing</a> ·
-  <a href="docs/whatsapp.md">WhatsApp</a>
+  <a href="docs/whatsapp.md">WhatsApp</a> ·
+  <a href="docs/ai-apps.md">AI apps (MCP)</a>
 </p>
 
 <p align="center">
